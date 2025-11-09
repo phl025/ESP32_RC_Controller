@@ -1,0 +1,34 @@
+Device: OSC48xx
+DateTime: 2024-09-05 22:58:52
+Param: [UART] 420000 8 None One bitInvert: No DatabitsInvert: LSB enableVoltage: L 
+
+https://github.com/crsf-wg/crsf/wiki/Message-Format
+
+
+FrameNb	Succeed	Number	Result
+1		OK		1		chA  { 'Data': C8 } [sync]
+1		OK		2		chA  { 'Data': 18 } [len] 0x18 -> 24
+1		OK		3		chA  { 'Data': 16 } [type] RC_Channel_packed 16 x 11b = 22b ytes
+1		OK		4		chA  { 'Data': E0 } [data 1]
+1		OK		5		chA  { 'Data': 03 }
+1		OK		6		chA  { 'Data': 1F }
+1		OK		7		chA  { 'Data': 2B }
+1		OK		8		chA  { 'Data': C0 }
+1		OK		9		chA  { 'Data': F7 }
+1		OK		10		chA  { 'Data': 0B }
+1		OK		11		chA  { 'Data': 56 }
+1		OK		12		chA  { 'Data': B0 }
+1		OK		13		chA  { 'Data': 82 }
+1		OK		14		chA  { 'Data': 15 }
+1		OK		15		chA  { 'Data': AC }
+1		OK		16		chA  { 'Data': 00 }
+1		OK		17		chA  { 'Data': 00 }
+1		OK		18		chA  { 'Data': 00 }
+1		OK		19		chA  { 'Data': 00 }
+1		OK		20		chA  { 'Data': 00 }
+1		OK		21		chA  { 'Data': 00 }
+1		OK		22		chA  { 'Data': 00 } 
+1		OK		23		chA  { 'Data': CC }
+1		OK		24		chA  { 'Data': 7B }
+1		OK		25		chA  { 'Data': E2 } [data 22]
+1		OK		26		chA  { 'Data': FB } [crc]

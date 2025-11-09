@@ -1,0 +1,121 @@
+*
+* Liste des Modifications
+*
+
+*
+* Tests RX Communication modes (2025-11-09)
+* 
+CRSF Communication : TX16S + RP3-H (CRSF) : OK, 16ch
+SBUS_Communication : TX16S + RP3-H (SBUS) : OK,
+PWM_Communication  : TX16S + ER6 (PWM pins 13, 12, 14, 27, 35, 34) : OK, 6ch 
+PPM_Communication  : TO DO !!
+
+
+*
+* Models definition
+*
+2025-09-26 :
+  - Add 0_Model.h -> Models list, call "models/model.h"
+  - Add \Models and models .h
+    Each 'model.h' include 
+    - sound definition (idem DIYGuy999 template)
+    - Remote configuration (like but does not match the DIYGuy999 template)
+  Benefit : Only one file by model
+  
+*
+* MAJ noms / convention
+*
+2025-09-18
+  - MAJ des noms de Class, fonctions, variables.. pour coller a la convention de nomage jointe.
+  - Ajout de \documents, \hardware
+
+*
+* Test PWM communication (inputs, using RTM)
+*
+2025-10-02
+  - Ajout rxPwm.h et rxPwm.cpp
+  - Test PWM_Communication (version 4 canaux)
+
+*
+* Test SBUS / CRSF
+*
+2025-09-26
+  - Test CRSF après mise a jour de TX16S, ER6, RP3-H en version 3.6.0 -> OK sur les 16 canaux
+
+2025-09-10 
+  - Ajout, test 'rxSbus'
+    -> 16 canaux OK
+    -> failSafe par timeout 100ms OK
+  - rxBase
+    - processFailSafe() : Ajout MAJ channel[].rxd
+
+2025-09-08
+  - Premiers test, résultat moyen
+  -> 16 canaux OK
+  -> pas de détection failSafe, pb de temps ~200us pour 100Hz / 10000us (????)
+
+*
+* Corrections diverses pour CRSF jusqu'à 16 chanaux (15 et 16 NOK)
+*
+2025-09-07
+  - Modifs diveres, erreurs avec 'nb_channels' et 'nb_channels + 1'
+  - Limitations de nb_channels fonction de RX_CHANNELS et MAX_CHANNELS
+
+*
+* Ajout de RxChannel
+*
+2025-08-28 :
+  - Ajout de RxChannel (objet)
+  - RxChannel[] est intégré dans rxBase, 
+  - raw_channel[], rx_channel[], rxd_channel[] : sont supprimés
+  - Tests semblent OK 
+
+*
+* Test module sonore :
+*
+2025-08-13 :
+  - Idle engine 	: OK,
+	- Rev Engine 	: OK,
+  - Horn (sound1) : OK (08-2x)
+  - Winch (sound2) : OK (08-2x)
+
+*
+* Test ESC
+*
+2025-04-23 : 
+- ESC1 a ESC3 OK, avec allocation dynamique
+- CRSFForArduino, testé : OK, A revoir pour faire un objet
+
+2025-04-22 : 
+- ESC1 et ESC2 OK, avec allocation statique "escDriver esc_1(1, MCPWM_UNIT_1, ..);"
+  -> Les variables de la classe doivent être déclarées dans escDriver.h 
+     (Ne fonctionne pas dans .cpp, erreur d'allocation mémoire)
+
+2025-04-19 :
+- Test ESC_1 : OK
+  Ajout gestion des rampes, idem variateur AVR-
+- Test ESC_2 : 
+	--> NOK, reboot CPU  
+
+2025-04-15 :
+- Test rxCrsf avec TX16S + ER6 : OK
+  Les canaux 1 a 9 sont mis a jour
+
+2025-04-14 :
+- Test rxPpm avec MC2020 : OK (pour controle)
+
+
+*
+* Tests modules externes
+*
+CRSFForArduino : 
+- Semble pas stable, saut de valeurs alors que c'est OK avec "AlfredoCRSF".
+- Retiré du projet (2025-05-14)
+
+
+
+
+
+*
+* EOF
+*

@@ -1,0 +1,53 @@
+*
+* Serial 2 started at 100000 baud rate, 8E2, Inverted
+*
+* Code :
+* 	Serial2.begin(100000, SERIAL_8E2, 36, -1, true);
+*
+
+* References :
+https://uwarg-docs.atlassian.net/wiki/spaces/ZP/pages/2238283817/SBUS+Protocol
+https://github.com/bolderflight/sbus/blob/main/README.md
+The SBUS protocol uses an inverted serial logic with a baud rate of 100000, 8 data bits, even parity, and 2 stop bits. The SBUS packet is 25 bytes long consisting of:
+    Byte[0]: SBUS header, (0x0F)
+    Byte[1 -22]: 16 servo channels, 11 bits each
+    Byte[23]
+        Bit 0: channel 17 (0x01)
+        Bit 1: channel 18 (0x02)
+        Bit 2: frame lost (0x04)
+        Bit 3: failsafe activated (0x08)
+    Byte[24]: SBUS footer, (0x00)
+
+0F DC 03 9F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 4F 76 00 00 
+	[header] 0F
+	[data]	 DC 03 9F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 4F 76
+	[footer] 00 00 
+
+0F DC 03 9F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 4F 76 00 00 
+0F DC 03 9F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 8F 76 00 00 
+0F DC 03 9F FA C4 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 8F 76 00 00 
+0F DC 03 9F FA C4 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 8F 76 00 00 
+0F DC 03 1F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 8F 76 00 00 
+0F DC 03 1F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 8F 76 00 00 
+0F DC 03 1F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 8F 76 04 00 
+0F DC 03 9F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 8F 76 04 00 
+0F DC 03 9F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 8F 76 00 00 
+0F DC 03 9F FA C0 C7 0A F0 81 0F 7C E0 03 1F F8 58 A1 3E EF 91 8F 76 00 00 
+
+
+
+
+
+Non inverted : 
+
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 E3 58 98 FE 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 E3 58 98 FE 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 67 58 98 FE 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 67 58 98 FE 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 67 58 98 1F 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 67 58 98 FE 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 67 58 98 FE 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 67 58 98 FE 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 67 58 98 FE 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 E3 58 98 FE 00 
+F8 04 C8 E8 12 B0 3E FA C2 0E FC FE 70 80 8A 61 84 E3 58 98 FE 00
