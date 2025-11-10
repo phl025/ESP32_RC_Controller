@@ -1,7 +1,7 @@
-# Arduino RC Controler for ESP32
+# Arduino RC Controller for ESP32
 
 ## Description
-This is a RC controler including engine sound, PWM, ESC and digital outputs.
+This is a RC controller including engine sound player, PWM outputs for servos, ESC drivers and digital outputs.
 
 ## Details
 It is based on *'Rc_Engine_Sound_ESP32'* : https://github.com/TheDIYGuy999/Rc_Engine_Sound_ESP32.
@@ -12,9 +12,9 @@ This version is modified for my boats.
 
 ## Software
 Many functions are converted to 'object-oriented programming', such as :
-- Receiver : rxBase, rxPpm, rxCrsf, rxSbus
-- RX Channels : rxChannel, chTrigger
-- ESC : escDriver
+- Receiver : RxBase, RxPpm, RxCrsf, RxSbus, RxPwm
+- RX Channels : RxChannel, chTrigger
+- ESC : escDriver for RZ7886 or IBT2
 - ...
 
 ## Hardware
@@ -31,6 +31,4 @@ Modifications :
 See "hardware/pictures/"
 
 ![hardware/pictures/ESP32_RC_Controler_005.jpg](hardware/pictures/ESP32_RC_Controler_005.jpg "This is a sample image.")
-
-
 
