@@ -325,13 +325,16 @@ void loop()
 	uint32_t _delta_us = rx_data->timeDiff(cur_us, _last_proccess);
 	// New data or 100ms
 	new_data = rx_data->Get_NewData();		// Get and reset if true
-	if (new_data || (_delta_us > 100000UL)) // New data or Timeout 100ms (10Hz)
+	if (new_data || (_delta_us > 500000UL)) // New data or Timeout 500ms
 	{
-		if (_delta_us > 100000UL) // Timeout 100ms (10Hz)
+		/*
+		if (_delta_us > 500000UL && rx_data->error == 0) // Timeout 500ms
 		{
 			rx_data->failSafe = true;
 			rx_data->error = -4;
+			//rx_data->setRawChannel(FAILSAFE_CHANNEL, 0);	// For PPM
 		}
+		*/
 		// Data process
 		rx_data->processRawChannels(cur_us);
 		cpProccess++;

@@ -141,11 +141,14 @@ void RxPpm::updateChannels(uint32_t cur_us)
 		{
 			channel[i].raw = ppm_buf_[i-1];
 		}
-		//
-		new_data = true;
 		new_ppm_data_ = false;
+		//
+		ready = true;
+		new_data = true;
+		failSafe = false;
+		last_good_read_ = cur_us;
+		error = 1; // For debug
 		rd_count_++;
-		error = 1;		// For debug
 		/// processRawChannels(FAILSAFE_CHANNEL, cur_us, last_rx_time_diff_);
 	}
 

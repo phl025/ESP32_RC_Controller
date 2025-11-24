@@ -8,6 +8,9 @@
 // Boulogne Etaple : TX16S + ER4
 //#include "models/boulogne.h"
 
+// Boulogne Etaple : Test PPM
+//#include "models/test_ppm.h"
+
 //
 // EOF
 //

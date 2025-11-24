@@ -40,6 +40,9 @@ uint16_t sbusFailsafeTimeout = 100; // Failsafe is triggered after this timeout 
 
 // PPM communication (RX header, 8 channels, working fine, but channel signals are a bit jittery)
 //#define PPM_COMMUNICATION           // control signals are coming in via the PPM interface (comment it out for classic PWM RC signals)
+#ifdef PPM_COMMUNICATION
+#define RX_CHANNELS 8
+#endif
 
 // PWM Mode
 //#define PWM_COMMUNICATION			// Defined by default
