@@ -1,4 +1,6 @@
 # Arduino RC Controller for ESP32
+[![GitHub latest release version](https://img.shields.io/github/v/release/phl025/ESP32_RC_Controller.svg?style=flat)](https://github.com/phl025/ESP32_RC_Controller/releases/latest)
+[![Github All Releases download count](https://img.shields.io/github/downloads/phl025/ESP32_RC_Controller/total.svg?style=flat)](https://github.com/phl025/ESP32_RC_Controller/releases/latest)
 
 ## Description
 This is a RC controller including engine sound player, PWM outputs for servos, ESC drivers and digital outputs.
