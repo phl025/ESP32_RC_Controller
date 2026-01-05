@@ -9,6 +9,7 @@ CRSF Communication : TX16S + RP3-H (CRSF) : OK, 16ch
 SBUS_Communication : TX16S + RP3-H (SBUS) : OK,
 PWM_Communication  : TX16S + ER6 (PWM pins 13, 12, 14, 27, 35, 34) : OK, 4 and 6ch 
 PPM_Communication  : MC2010 (Trainer output) : OK, but stability not correct (error with integrator .rxd) (2025-11-24)
+--> Test https://github.com/dimag0g/PPM-reader/tree/master
 
 
 *

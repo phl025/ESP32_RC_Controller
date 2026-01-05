@@ -52,18 +52,6 @@ void IRAM_ATTR IT_Signal_Ppm()
 #pragma endregion PPM_FUNCTIONS
 
 // =======================================================================================================
-// PWM Functions
-// =======================================================================================================
-#pragma region PWM_FUNCTIONS
-#ifdef PWM_COMMUNICATION
-// Declare static data
-volatile uint8_t* RxPwm::pwmPin_ = PWM_PINS;
-volatile unsigned int* RxPwm::pwmBuffer_ = new unsigned int [MAX_PWM_CHANNELS];
-volatile bool RxPwm::new_isr_data_ = false;
-#endif 	// PWM_COMMUNICATION
-#pragma endregion PWM_FUNCTIONS
-
-// =======================================================================================================
 // Setup
 // =======================================================================================================
 /// @brief Setup program
@@ -219,8 +207,14 @@ void setup()
 	//Serial.printf("* Setup PPM Communication\n");
 	rx_data = new RxPpm(RX_CHANNELS, 1, channelFailSafe, channelIntregrator, channelReversed);
 	Serial.printf("* - Setup PPM Communication, attach interrupt \n");
-	attachInterrupt(digitalPinToInterrupt(COMMAND_RX), IT_Signal_Ppm, RISING); // begin PPM communication with compatible receivers
-																			   // attachInterrupt(GPIO_NUM_36, PpmIT, RISING); 	// begin PPM communication with compatible receivers
+	//attachInterrupt(digitalPinToInterrupt(COMMAND_RX), IT_Signal_Ppm, RISING); // begin PPM communication with compatible receivers
+	attachInterrupt(digitalPinToInterrupt(COMMAND_RX), IT_Signal_Ppm, FALLING); // begin PPM communication with compatible receivers
+	// attachInterrupt(GPIO_NUM_36, PpmIT, RISING); 	// begin PPM communication with compatible receivers
+	// RISING : Déclenché lors d'une transition de LOW à HIGH.
+    // FALLING : Déclenché lors d'une transition de HIGH à LOW.
+    // CHANGE : Déclenché lors de tout changement d'état.
+    // LOW : Déclenché lorsque la broche reste à LOW.
+    // HIGH : Déclenché lorsque la broche reste à HIGH.
 //#else
 	// PPM Inside RxPpm class
 	//rx_data = new RxPpm(RX_CHANNELS, 1, channelFailSafe, channelIntregrator, channelReversed);

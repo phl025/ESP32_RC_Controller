@@ -282,15 +282,23 @@ uint32_t maxTcy = 0;
 #if defined CRSF_COMMUNICATION
 // CRSF RX Communication
 RxCrsf *rx_data;
+
 #elif defined SBUS_COMMUNICATION
 // SBUS RX Communication
 RxSbus *rx_data;
+
 #elif defined PPM_COMMUNICATION
 // PPM RX Communication
 RxPpm *rx_data;
+
 #elif defined PWM_COMMUNICATION
 // PWM Mode - TO DO..
 RxPwm *rx_data;
+// Declare static data
+volatile uint8_t* RxPwm::pwmPin_ = PWM_PINS;
+volatile unsigned int* RxPwm::pwmBuffer_ = new unsigned int [MAX_PWM_CHANNELS];
+volatile bool RxPwm::new_isr_data_ = false;
+
 #else
 // Other, Not defined
 RxBase *rx_data;

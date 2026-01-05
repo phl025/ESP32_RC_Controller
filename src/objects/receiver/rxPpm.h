@@ -6,16 +6,25 @@
 #ifndef RX_PPM_H
 #define RX_PPM_H
 
+#include <Arduino.h>
+//
+#define BUFFER_SIZE 4	// Use 2, 4 or 8
+
 // Class definition (header)
 class RxPpm : public RxBase
 {
 // Data
 protected:
+	// Static for ISR
+
 	volatile unsigned int ppm_buf_[MAX_PPM_CHANNELS+1]; 
 	volatile unsigned int ppm_in_[MAX_PPM_CHANNELS+1];
 	volatile short counter_ = 0;
 	volatile short average_cnt_ = 0;
 	volatile bool new_ppm_data_ = false;
+
+private:
+	volatile uint16_t ppmBuffer_ [MAX_PPM_CHANNELS+1][BUFFER_SIZE+1];
 	
 // Methode
 public:
@@ -27,8 +36,13 @@ public:
 	//
 	uint32_t GetPpmIn(int channel);
 
-	// Inline functions
-	//inline uint32_t Getlast_good_read_() const {return last_good_read_;}
+private:
+	uint16_t bufferUpdate(int channel, uint16_t value);
+
+protected:
+	//static void IRAM_ATTR gpio_isr();
+
+
 };
 #endif
 

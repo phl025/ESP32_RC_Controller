@@ -30,6 +30,11 @@ RxPpm::RxPpm(int in_channels, short in_average) : RxBase(in_channels)
 		ppm_buf_[i] = 0;
 		channel[i].raw = 0;
 		channel[i].rx = 0;
+		// Reset Buffer
+		for (int j=0; j<=BUFFER_SIZE; j++)
+		{
+			ppmBuffer_[i][j] = 1500;
+		}
 	}
 	// For first readCommand
 	new_data = true;
@@ -56,6 +61,11 @@ RxPpm::RxPpm(int in_channels, short in_average, int *p_chFailSafe, int* p_chInte
 		ppm_buf_[i] = 0;
 		channel[i].raw = 0;
 		channel[i].rx = 0;
+		// Reset Buffer
+		for (int j=0; j<=BUFFER_SIZE; j++)
+		{
+			ppmBuffer_[i][j] = 1500;
+		}
 	}
 	// For first readCommand
 	new_data = true;
@@ -83,8 +93,49 @@ uint32_t RxPpm::Getlast_good_read_(void)
 */
 
 // =======================================================================================================
-// PPM SIGNAL INTERRUPT
+// PPM SIGNAL INTERRUPT - GPIO ISR
 // =======================================================================================================
+/// @brief Input Edge interrupt -> Read pulse time [0..2000us]
+/* Errors with none static variables
+void IRAM_ATTR RxPpm::gpio_isr()
+{
+	uint32_t cur_us = micros();
+	uint64_t _timediff = cur_us - timelast_;
+	timelast_ = cur_us;
+
+	if (_timediff > 5000)	// > 2500 Synch gap detected:
+	{
+	  	//ppm_in_[MAX_PPM_CHANNELS] = ppm_in_[MAX_PPM_CHANNELS] + _timediff; 	// Add time
+		//if (average_cnt_ == NUM_OF_PPM_AVG)
+		{
+			///raw_channel[0] = 1500;
+			channel[0].raw = 1500;
+			for (int i = 0; i < MAX_PPM_CHANNELS + 1; i++)
+			{
+				//ppm_buf_[i] = ppm_in_[i] / average_cnt_;
+				ppm_buf_[i] = ppm_in_[i];
+				ppm_in_[i] = 0;
+			}
+			last_good_read_ = cur_us;
+			ready = true;
+			new_ppm_data_ = true;		// New data
+			//average_cnt_ = 0;
+		}
+		//average_cnt_++;
+		counter_ = 0;
+	}
+	else
+	{
+		if (counter_ < MAX_PPM_CHANNELS)
+		{
+			//ppm_in_[counter_] = ppm_in_[counter_] + _timediff;		// Add time
+			ppm_in_[counter_] = _timediff;		// Add time
+			counter_++;
+		}
+	}
+	it_count_++;
+}
+*/
 
 /// @brief IT_PPM, Call by Interrupt (PPM digital pin rising edge)
 /// @param cur_us current timer (us), use micros()
@@ -93,31 +144,33 @@ void RxPpm::IT_Ppm(uint32_t cur_us)
 	uint64_t _timediff = cur_us - timelast_;
 	timelast_ = cur_us;
 
-	if (_timediff > 2500)	// Synch gap detected:
+	if (_timediff > 5000)	// > 2500 Synch gap detected:
 	{
-	  	ppm_in_[MAX_PPM_CHANNELS] = ppm_in_[MAX_PPM_CHANNELS] + _timediff; 	// Add time
-		if (average_cnt_ == NUM_OF_PPM_AVG)
+	  	//ppm_in_[MAX_PPM_CHANNELS] = ppm_in_[MAX_PPM_CHANNELS] + _timediff; 	// Add time
+		//if (average_cnt_ == NUM_OF_PPM_AVG)
 		{
 			///raw_channel[0] = 1500;
 			channel[0].raw = 1500;
 			for (int i = 0; i < MAX_PPM_CHANNELS + 1; i++)
 			{
-				ppm_buf_[i] = ppm_in_[i] / average_cnt_;
+				//ppm_buf_[i] = ppm_in_[i] / average_cnt_;
+				ppm_buf_[i] = ppm_in_[i];
 				ppm_in_[i] = 0;
 			}
 			last_good_read_ = cur_us;
 			ready = true;
 			new_ppm_data_ = true;		// New data
-			average_cnt_ = 0;
+			//average_cnt_ = 0;
 		}
-		average_cnt_++;
+		//average_cnt_++;
 		counter_ = 0;
 	}
 	else
 	{
 		if (counter_ < MAX_PPM_CHANNELS)
 		{
-			ppm_in_[counter_] = ppm_in_[counter_] + _timediff;		// Add time
+			//ppm_in_[counter_] = ppm_in_[counter_] + _timediff;		// Add time
+			ppm_in_[counter_] = _timediff;		// Add time
 			counter_++;
 		}
 	}
@@ -137,9 +190,11 @@ void RxPpm::updateChannels(uint32_t cur_us)
 	{
 		channel[0].raw = 0;
 		//for (i = 1; i <= MAX_PPM_CHANNELS; i++)
-		for (int i=0; i <= nb_channels_; i++)
+		for (int i=1; i <= nb_channels_; i++)
 		{
-			channel[i].raw = ppm_buf_[i-1];
+			//channel[i].raw = ppm_buf_[i-1];
+			// Sliding average
+			channel[i].raw = bufferUpdate(i, ppm_buf_[i-1]);
 		}
 		new_ppm_data_ = false;
 		//
@@ -185,6 +240,26 @@ void RxPpm::updateChannels(uint32_t cur_us)
 	failSafe = (pulseWidthRaw[3] < 500 || pulseWidthRaw[3] > 2500);
 	failsafeRcSignals();
 	*/	
+}
+
+/// @brief Buffer scroll and update
+/// @param channel Channel number [1..n]
+/// @param value Rx raw value
+/// @return Processed value
+uint16_t RxPpm::bufferUpdate(int channel, uint16_t value)
+{
+	uint16_t sum = 0;
+	for (int j = BUFFER_SIZE; j > 1 ; j--)		// 4..2
+	{
+		ppmBuffer_[channel][j] = ppmBuffer_[channel][j-1];		//4 <- 3, 3 <- 2, 2 <- 1
+		sum += ppmBuffer_[channel][j];
+	}
+	ppmBuffer_[channel][1] = value;
+	sum += ppmBuffer_[channel][1];
+	//ppmBuffer_[channel][0] = (sum / BUFFER_SIZE);
+	ppmBuffer_[channel][0] = sum >> (BUFFER_SIZE/2);
+	//
+	return ppmBuffer_[channel][0];
 }
 
 //
