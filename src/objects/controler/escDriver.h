@@ -1,7 +1,7 @@
 //
 // EscDriver.h : EscDriver class, Driver for RC ESC
 //
-// Author : PHL @2025
+// Author : PHL, 2025
 
 #ifndef ESC_DRIVER_H
 #define ESC_DRIVER_H

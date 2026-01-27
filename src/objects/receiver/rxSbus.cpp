@@ -84,7 +84,8 @@ void IRAM_ATTR RxSbus::updateChannels(uint32_t cur_us)
 		_SBUSchannels = _sBus.ch();
 		for (int i=1; i<=nb_channels_; i++)
 		{
-			channel[i].raw = map(_SBUSchannels[i-1], 172, 1811, 1000, 2000);
+			//channel[i].raw = map(_SBUSchannels[i-1], 172, 1811, 1000, 2000);
+			channel[i].raw = map(_SBUSchannels[i-1], 172, 1812, 1000, 2000);		// 992-820, 992+820 - PHL
 		}
 		ready = true;
 		failSafe = false;

@@ -9,20 +9,20 @@
 // For GPIO
 #include <driver/gpio.h>
 //
-#include "global.h"
-// Ext_src : TheDIYGuy999 source code
-#include "src_ext/statusLED.h"
+#include "..\global.h"
+#include "outputLED.h"
 
 // Class definition (header)
 class Outputs {
 // Data
 private:
 	int outputCount_ = OUTPUTS_MAX;
-	uint8_t pins_[OUTPUTS_MAX] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
+	const uint8_t pins_[OUTPUTS_MAX] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
 	esp_err_t gpio_error_;		// GPIO error code
 
 public:
-	statusLED channel[OUTPUTS_MAX];	// RX channel objects
+	//statusLED channel[OUTPUTS_MAX];	// RX channel objects
+	OutputLED channel[OUTPUTS_MAX];	// RX channel objects
 
 // Methode
 public:

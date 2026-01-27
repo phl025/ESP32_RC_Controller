@@ -5,28 +5,19 @@
 #define MODEL_H
 
 // Configuration name
-#define CONFIGURATION "TX16S + RP3-H / CRSF 16ch / Civelier"
+#define CONFIGURATION "Civellier, TX16S + RP3-H / CRSF 16ch"
 
 // Sound model
 #include "vehicles/Kifanlo.h"
 
-// Sound trigger
-// channel[x].trigger : low / high / lowEdge / highEdge / lowD / highD / lowEdgeD / highEdgeD / latchLow / latchHigh (D=Delayed)
-#define MASTER_VOL_TRIG rx_data->channel[5].trigger.highEdgeD
-#define HORN_TRIG 		rx_data->channel[10].trigger.lowEdge
-#define SOUND1_TRIG 	rx_data->channel[10].trigger.highEdge
-#define SOUND2_TRIG		rx_data->channel[6].trigger.high || rx_data->channel[6].trigger.low
-
-// Leds / Output command
-// Ouputs, ULN2003 (IC2) : 23 (3x), 22, 3, 21, 19 
-// Ouputs, ULN2003 (IC3) : 18, 5, 17, 16, 4, 2, 15 
-#define PIN_OUT1		18
-#define PIN_OUT2		5
-#define OUT1_CMD		rx_data->channel[7].trigger.latchLow
-#define OUT2_CMD		rx_data->channel[7].trigger.latchHigh
-
 // Remote control : RadioMaster TX16S + RP3-H
 #define RX_CHANNELS 16
+
+// 3-positions Multiswitch 
+#define MIX3P 10		// Use channel 10
+
+// 8 buttons Multiswitch 
+//#define MIX4  10		// Use channel 10
 
 // CRSF communication
 #define CRSF_COMMUNICATION          // OK 2025-04-15 (by AlfredoCRSF)
@@ -63,7 +54,6 @@ uint8_t PWM_PINS[RX_CHANNELS] = {13, 12, 14, 27, 35, 34};	// Input pin numbers (
 #define STEERING 1           // CH1 steering
 #define THROTTLE 3           // CH3 throttle & brake
 
-
 /*
 // Remote channel #######    // Sound controller channel ##########################################
 #define STEERING 1           // CH1 steering
@@ -81,6 +71,31 @@ uint8_t PWM_PINS[RX_CHANNELS] = {13, 12, 14, 27, 35, 34};	// Input pin numbers (
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
 */
+
+// Sound trigger
+// channel[x].trigger : low / high / lowEdge / highEdge / lowD / highD / lowEdgeD / highEdgeD / latchLow / latchHigh (D=Delayed)
+#define MASTER_VOL_TRIG rx_data->channel[5].trigger.highEdgeD
+//
+#if defined(MIX3P) || defined(MIX4)
+  #define HORN_TRIG 	rx_data->channel[MIX3P].getSwitchBit(0)
+  #define SOUND1_TRIG 	rx_data->channel[MIX3P].getSwitchBit(1)
+  //#define HORN_TRIG 	rx_data->getMultiSwitch(0)		
+  //#define SOUND1_TRIG 	rx_data->getMultiSwitch(1)
+#else
+  #define HORN_TRIG 	rx_data->channel[10].trigger.lowEdge
+  #define SOUND1_TRIG 	rx_data->channel[10].trigger.highEdge
+#endif
+#define SOUND2_TRIG		rx_data->channel[6].trigger.high || rx_data->channel[6].trigger.low
+
+// Leds / Output command -> See below 'modelOutput'
+// Ouputs, ULN2003 (IC2) : 23 (3x), 22, 3, 21, 19 
+// Ouputs, ULN2003 (IC3) : 18, 5, 17, 16, 4, 2, 15 
+//#define PIN_OUT1		18
+//#define PIN_OUT2		5
+//#define OUT1_CMD		rx_data->channel[7].trigger.latchLow
+//#define OUT2_CMD		rx_data->channel[7].trigger.latchHigh
+
+
 
 // Channels reversed or not
 bool channelReversed[17] = {
@@ -115,7 +130,7 @@ int channelFailSafe[17] = {
 	1500,	// CH7
 	1500,	// CH8
 	1500,	// CH9
-	1500,	// CH10
+	1020,	// CH10	-- 1020 : 0, Mix3P
 	1500,	// CH11
 	1500,	// CH12
 	1500,	// CH13
@@ -125,12 +140,12 @@ int channelFailSafe[17] = {
 };
 
 // Output channels definition (Not avalable for PWM mode) [1..6]: PWM1 .. PWM6
-int OutputChannel[7] = {
+int PwmOutputChannel[7] = {
 	0,		// CH0 (unused)
 	1,		// CH1 or ESC3
 	2,		// CH2 or ESC3
-	8,		// CH3 or ESC2
-	9,		// CH4 or ESC2
+	6,		// CH3 or ESC2, Channel 6 (SB + FM6)	
+	7,		// CH4 or ESC2, Channel 7 (SC + FM6)	
 	0,		// CH5 or ESC1
 	0,		// CH6 or ESC1
 };
@@ -202,28 +217,59 @@ uint8_t ESC3_DRAGBRAKE_DUTY = 10;
 #endif
 
 // Model output
-//#define OUTPUTS		12
-//uint8_t OUTPUT_PINS[OUTPUTS] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
-// Hardware IC3 : [0] 18:Sidelight, [1] 5:Rooflight, [2] 17:Reversing, [3] 16:Foglight, [4] 4:Indicator R, [5] 2:Indicator_L, [6] 15:TailLight
-// Hardware IC2 : [7] 23:Shaker (3x), [8] 22:Cabinlight, [9] 3:Headlight, [10] 21:Beaconlight, [11] 19:Beaconlight2
-//
-// For outputModel()
-#include "src_ext/statusLED.h"
+// #define OUTPUTS		12
+// uint8_t OUTPUT_PINS[OUTPUTS] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
+// Hardware IC3 : [0] 18:Sidelight, [1] 5:Rooflight, [2] 17:Reversing, [3] 16:Foglight, [4] 4:Indicator_R, [5] 2:Indicator_L, [6] 15:TailLight
+// Hardware IC2 : [7] 23:Shaker (3x), [8] 22:Cabinlight, [9] 3:Headlight, [10] 21:Beaconlight1, [11] 19:Beaconlight2
 
 // Outputs : Defined for the model
-inline void modelOutput(RxChannel *rx_channel, statusLED *leds)
+inline void modelOutput(RxChannel *rx_channel, OutputLED *leds, bool rxReady, bool engineStarting)
 {
-	// Indicator R [4], pin 'D4'
-	if (rx_channel[STEERING].trigger.low)
-		leds[4].flash(375, 375, 0, 0, 0, 250, 0);
-	else
-		leds[4].off(250, 0);
+	uint8_t crankingDim = 0;
+	// Brigthness adjustment
+	uint8_t brightness = map(rx_channel[13].rx, 988, 2012, 0, 255);
 
-	// Indicator L [5], pin 'D2'
-	if (rx_channel[STEERING].trigger.high)
-		leds[5].flash(375, 375, 0, 0, 0, 250, 0);
+	// Engine starting dimming 
+	if (engineStarting) crankingDim = 1;	// 1 = 50%, 2 = 25%
+
+	// Indicator R [4] pin 'D4'
+	if (rx_channel[STEERING].trigger.low)
+		leds[4].flash(250, 250, 0, 0, 0, 255, 0, 0, 390);	// 390 us -> ~100ms
 	else
-		leds[5].off(250, 0);
+		leds[4].pwm(0, 0, 400);		// 400 us -> ~100ms
+		//leds[4].off(0, 400);		// 400 us -> ~100ms
+
+	// Indicator L [5] pin 'D2'
+	if (rx_channel[STEERING].trigger.high)
+		leds[5].flash(250, 250, 0, 0, 0, 255, 0, 0, 390);
+	else
+		leds[5].pwm(0, 0, 400);		// 400 us -> ~100ms
+		//leds[5].off(0, 400);
+		
+	// Fogligth [3] pin 'D16' : Fishing light
+	if(rx_channel[MIX3P].getSwitchLatch(6) && rxReady)
+	//if (rx_channel[8].trigger.latchLow && rxReady)
+		leds[3].pwm(255 - crankingDim, 0, 0);
+		//leds[3].pwm(brightness >> crankingDim, 0, 0);		// No ramp
+	else
+		leds[3].pwm(0, 0, 400);		// = leds[3].off(0, 400);
+
+	// Roofligth [1] pin 'D5' : Fishing light (cabine)
+	if(rx_channel[MIX3P].getSwitchLatch(7) && rxReady)
+	//if (rx_channel[8].trigger.latchHigh && rxReady)
+		//leds[1].pwm(255 - crankingDim, 0, 0);
+		leds[1].pwm((brightness >> crankingDim), 0, 0);	// No ramp
+	else
+		leds[1].pwm(0, 0, 400);		// 400 us -> ~100ms
+
+	// Cabineligth [8] pin'D22'
+	if (rxReady)
+		//leds[8].pwm(255 - crankingDim);
+		leds[8].pwm(255 >> crankingDim);			// No ramp
+	else
+		//leds[8].off(0, 1000);		// 1000 -> 1000*256us = 256ms
+		leds[8].pwm(0, 0, 400);		// 400 us -> ~100ms
+		
 }
 
 /*

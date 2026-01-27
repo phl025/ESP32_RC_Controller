@@ -143,6 +143,7 @@ void AlfredoCRSF::shiftRxBuffer(uint8_t cnt)
 void AlfredoCRSF::packetChannelsPacked(const crsf_header_t *p)
 {
     crsf_channels_t *ch = (crsf_channels_t *)&p->data;
+    /*
     _channels[0] = ch->ch0;
     _channels[1] = ch->ch1;
     _channels[2] = ch->ch2;
@@ -159,9 +160,29 @@ void AlfredoCRSF::packetChannelsPacked(const crsf_header_t *p)
     _channels[13] = ch->ch13;
     _channels[14] = ch->ch14;
     _channels[15] = ch->ch15;
-
+    //
     for (unsigned int i=0; i<CRSF_NUM_CHANNELS; ++i)
         _channels[i] = map(_channels[i], CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_2000, 1000, 2000);
+    */
+    _raw[0] = ch->ch0;
+    _raw[1] = ch->ch1;
+    _raw[2] = ch->ch2;
+    _raw[3] = ch->ch3;
+    _raw[4] = ch->ch4;
+    _raw[5] = ch->ch5;
+    _raw[6] = ch->ch6;
+    _raw[7] = ch->ch7;
+    _raw[8] = ch->ch8;
+    _raw[9] = ch->ch9;
+    _raw[10] = ch->ch10;
+    _raw[11] = ch->ch11;
+    _raw[12] = ch->ch12;
+    _raw[13] = ch->ch13;
+    _raw[14] = ch->ch14;
+    _raw[15] = ch->ch15;
+    //
+    for (unsigned int i=0; i<CRSF_NUM_CHANNELS; ++i)
+        _channels[i] = map(_raw[i], CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_2000, 1000, 2000);
 
     _linkIsUp = true;
     _lastChannelsPacket = millis();

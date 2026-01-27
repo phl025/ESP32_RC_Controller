@@ -26,21 +26,22 @@
 
 // Objects
 #include "objects/global.h"
-#include "objects/escDriver.h"			// ESC Driver object, type RZ7886 - PHL
-#include "objects/receiver/rxBase.h"	// Rx object, base - PHL
-#include "objects/receiver/rxPpm.h"		// Rx object, PPM input mode - PHL
-#include "objects/receiver/rxPwm.h"		// Rx object, PMM input mode - PHL
-#include "objects/receiver/rxSbus.h"	// Rx object, SBUS - PHL
-#include "objects/receiver/rxCrsf.h"	// Rx object, CRSF - PHL
-#include "objects/receiver/chTrigger.h"	// Trigger - PHL
 //
-#include "objects/iecTimer.h"			// IEC Timer - PHL
-// #include "objects/output.h"			// Output - PHL
-#include "objects/outputs.h"			// Outputs - PHL
-#include "objects/soundPlayer.h"		// Sound player - PHL
+#include "objects/receiver/rxBase.h"		// Rx object, base - PHL
+#include "objects/receiver/rxPpm.h"			// Rx object, PPM input mode - PHL
+#include "objects/receiver/rxPwm.h"			// Rx object, PMM input mode - PHL
+#include "objects/receiver/rxSbus.h"		// Rx object, SBUS - PHL
+#include "objects/receiver/rxCrsf.h"		// Rx object, CRSF - PHL
+#include "objects/receiver/chTrigger.h"		// Trigger - PHL
+//
+#include "objects/controler/escDriver.h"	// ESC Driver object, type RZ7886 - PHL
+#include "objects/controler/iecTimer.h"		// IEC Timer - PHL
+#include "objects/controler/outputs.h"		// Outputs - PHL
+//
+#include "objects/soundPlayer.h"			// Sound player - PHL
+#include "objects/eepromData.h"				// EEPROM Data ()
 
 // Ext_src : TheDIYGuy999 source code
-#include "src_ext/statusLED.h"
 // SBUS (Test idem RC_Engine_Sound_V9.13)
 #if defined EMBEDDED_SBUS
 #include "src_ext/sbus.h" // For SBUS interface
@@ -102,6 +103,8 @@ Outputs *leds = NULL;
 // Tempos
 //
 IecTimer TON_Pwm_0;
+IecTimer TON_Ready;
+bool rxReady = false;
 
 //
 // Triggers -> Move to receiver->channel[]
@@ -112,6 +115,16 @@ ChTrigger trigCh3;		    // use default values (1800, 500, 1200, 500, 50)
 ChTrigger trigCh4;			// use default values (1800, 500, 1200, 500, 50)
 ChTrigger trigCh5(1800, 500, 1200, 250, 50);
 */
+
+//
+// EEPROM
+//
+// EEPROM settings
+//#define EEPROM_SIZE 256 	// 256 Bytes (512 is maximum)
+#ifdef EEPROM_SIZE
+EEpromData romData(EEPROM_SIZE);
+uint8_t eeprom_id = 1; 		// Change this id (between 1 and 255, compare with serial monitor), if you want to restore EEPROM defaults (only executed 1x)
+#endif
 
 //
 // SOUND AREA
@@ -282,6 +295,7 @@ uint32_t maxTcy = 0;
 #if defined CRSF_COMMUNICATION
 // CRSF RX Communication
 RxCrsf *rx_data;
+
 
 #elif defined SBUS_COMMUNICATION
 // SBUS RX Communication

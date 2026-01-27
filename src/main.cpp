@@ -1,7 +1,7 @@
 //
 // ESP32_RC_Controler : RC Controler with engine sound
 //
-// PHL @2025
+// PHL025 : 2025..
 
 // SHIFT + ALT + F : Format document
 //
@@ -27,6 +27,7 @@
 // Local functions
 void Task1code(void *pvParameters);
 void setupMcpwm();
+void setupEEprom();
 void mcpwmOutput();
 void outputUpdate();
 void SerialDebug(uint32_t cur_ms, uint32_t _last_proccess);
@@ -54,6 +55,22 @@ void IRAM_ATTR IT_Signal_Ppm()
 // =======================================================================================================
 // Setup
 // =======================================================================================================
+
+/// @brief EEPROM Setup
+void setupEEprom()
+{
+#ifdef EEPROM_SIZE
+//#if defined ERASE_EEPROM_ON_BOOT
+//	romData.Reset(EEPROM_SIZE, 0);
+//#endif
+	// Init with default values, if eeprom_id changed
+	romData.Init(eeprom_id);
+	// Read settings from Eeprom
+	romData.Read();	
+	romData.Debug();
+#endif
+};
+
 /// @brief Setup program
 void setup()
 {
@@ -100,13 +117,13 @@ void setup()
 #ifdef PWM_COMMUNICATION
 	Serial.printf("* - PWM1 to PWM4, Not avalaible if RX_PWM Mode\n");
 #else
-	Serial.printf("* - PWM 1 : Ch[%i]\n", OutputChannel[1]);
-	Serial.printf("* - PWM 2 : Ch[%i]\n", OutputChannel[2]);
-	Serial.printf("* - PWM 3 : Ch[%i]\n", OutputChannel[3]);
-	Serial.printf("* - PWM 4 : Ch[%i]\n", OutputChannel[4]);
+	Serial.printf("* - PWM 1 : Ch[%i]\n", PwmOutputChannel[1]);
+	Serial.printf("* - PWM 2 : Ch[%i]\n", PwmOutputChannel[2]);
+	Serial.printf("* - PWM 3 : Ch[%i]\n", PwmOutputChannel[3]);
+	Serial.printf("* - PWM 4 : Ch[%i]\n", PwmOutputChannel[4]);
 #endif
-	Serial.printf("* - PWM 5 : Ch[%i]\n", OutputChannel[5]);
-	Serial.printf("* - PWM 6 : Ch[%i]\n", OutputChannel[6]);
+	Serial.printf("* - PWM 5 : Ch[%i]\n", PwmOutputChannel[5]);
+	Serial.printf("* - PWM 6 : Ch[%i]\n", PwmOutputChannel[6]);
 
 	// ESC contiguration
 #ifdef ESC1_DRIVER // ESC 1
@@ -251,6 +268,9 @@ void setup()
 	// indicatorR.begin(4, 3, 20000);			// Indicator_R, Timer 2, 20kHz
 	// shakerMotor.begin(23, 13, 20000); 	// Shaker motor, Timer 13, 20kHz
 
+	// EEPROM Setup
+	setupEEprom();
+
 	// TCY
 	minTcy = 4294967295;
 	maxTcy = 0;
@@ -274,7 +294,6 @@ void loop()
 	bool new_data;
 	// Curent ms, us
 	uint32_t curTcy;
-	//
 	uint32_t cur_ms = millis();
 	uint32_t cur_us = micros();
 	bgdCount++;
@@ -282,36 +301,7 @@ void loop()
 	// Running core
 	if (coreLoop == -1)
 		coreLoop = xPortGetCoreID();
-/*
-	// RX signal update
-#if defined SBUS_COMMUNICATION 			// Test : TX16S + RP3-H (SBus mode)
-	// SBUS Communication
-	rx_data->updateChannels(cur_us);
-
-	/*
-	#elif defined IBUS_COMMUNICATION		// NOT TESTED
-		readIbusCommands(); // IBUS communication (pin 36)
-		//mcpwmOutput();		// PWM servo signal output
-
-	#elif defined SUMD_COMMUNICATION		// NOT TESTED
-		readSumdCommands(); // SUMD communication (pin 36)
-		//mcpwmOutput();		// PWM servo signal output
-	*-/
-
-#elif defined CRSF_COMMUNICATION		// Tested TX16S + RP3-H / ER6 (CRSF Mode) (2025-04)
-	// CRSF communication (RX1 modified to pin 36)
-	rx_data->updateChannels(cur_us);
-
-#elif defined PPM_COMMUNICATION 		// Tested MC2020 (2025-04)
-	// PPM communication (pin 36)
-	rx_data->updateChannels(cur_us);
-
-#elif defined PWM_COMMUNICATION 		// Tested TX16S + ER6 (2025-11)
-	rx_data->updateChannels(cur_us);
-
-#endif // RX signal update
-*/
-
+	
 	// RX channels update
 	rx_data->updateChannels(cur_us);
 	// Update
@@ -321,18 +311,20 @@ void loop()
 	new_data = rx_data->Get_NewData();		// Get and reset if true
 	if (new_data || (_delta_us > 500000UL)) // New data or Timeout 500ms
 	{
-		/*
-		if (_delta_us > 500000UL && rx_data->error == 0) // Timeout 500ms
-		{
-			rx_data->failSafe = true;
-			rx_data->error = -4;
-			//rx_data->setRawChannel(FAILSAFE_CHANNEL, 0);	// For PPM
-		}
-		*/
 		// Data process
 		rx_data->processRawChannels(cur_us);
 		cpProccess++;
-		mcpwmOutput(); // PWM servo signal output
+		//
+		// Multi switch mixer (Need CRSF / SBUS protocol) - Not tested with PWM/PPM protocol(2026-01)
+#ifdef MIX3P
+		// Use 'Mix3P.lua', Tested with TX16S / RH3-P (CRSF)
+		rx_data->channel[MIX3P].GetMix3P(rx_data->failSafe);
+#elif MIX4
+		// Use 'Mix4.lua', Tested with TX16S / RH3-P (CRSF)
+		rx_data->channel[MIX4].GetMix4(rx_data->failSafe);
+#endif
+		//
+		mcpwmOutput(); 	// PWM servo signal output
 		// Esc 1
 		if (esc_1 != NULL)
 		{
@@ -355,40 +347,29 @@ void loop()
 			// esc_3->rampAVR(rx_data->channel[ESC3_CH].rx, cur_ms);	// Rampe managed by ESC
 			esc_3->update(rx_data->channel[ESC3_CH].rxd, false); // Rampe managed by channel[].rxd
 		//
-		// Triggers
-		//
-		/*
-		trigCh1.update(rx_data->_channel[1].rx, cur_ms);
-		trigCh2.update(rx_data->channel[2].rx, cur_ms);
-		trigCh3.update(rx_data->_channel[3].rx, cur_ms);
-		trigCh4.update(rx_data->channel[4].rx, cur_ms);
-		*/
-		//
 		// IEC Timer
 		//
-		TON_Pwm_0.TON((currentPwm == 0), cur_ms, 20000); // 20s
-
+		TON_Pwm_0.TON((currentPwm == 0), cur_ms, 20000); 		// 20s
+		rxReady = TON_Ready.TON((!rx_data->failSafe), cur_ms, 1000); 		// 1s
 		//
 		// Engine sound
 		//
-		if (rx_data->channel[THROTTLE].rxd > 1700 && !engineOn)
+		if (rx_data->channel[THROTTLE].rxd > 1600 && !engineOn)		// 1500 + 20%
 			engineOn = true;
 		if ((rx_data->failSafe || TON_Pwm_0.ton) && engineOn)
 			engineOn = false;
-
+		//
 		// Speed (sample rate) output
-		engineSampleRate = map(currentPwm, minPwm, maxPwm, maxSampleInterval, minSampleInterval); // Idle
+		engineSampleRate = map(currentPwm, minPwm, maxPwm, maxSampleInterval, minSampleInterval);
 		// Sound trigger
 		SoundTriggerSet();
 		// Volume adjustment
 		VolumeSet();
 		// Fader
 		// dacOffsetFade(); 	// Move to Task1
-
-		// Engine sound (end)
 	}
 	// Output update
-	modelOutput(rx_data->channel, leds->channel);
+	modelOutput(rx_data->channel, leds->channel, rxReady, engineState == STARTING);
 	// outputUpdate();			// Output
 
 	// Debug chanels
@@ -501,7 +482,7 @@ void outputUpdate()
 	*/
 }
 
-/// @brief Setup MCPWM configuration (ch1 to ch6, ch7)
+/// @brief Setup MCPWM configuration (CH1 to CH6, CH7)
 void setupMcpwm()
 {
 	// Configure MCPWM parameters
@@ -539,7 +520,7 @@ void setupMcpwm()
 #endif
 }
 
-/// @brief Set MCPWM outputs (ch1 to ch6, ch7)
+/// @brief Set MCPWM outputs (CH1 to CH6, CH7)
 void mcpwmOutput()
 {
 	// Set PWM chanels [1000..2000]
@@ -547,10 +528,10 @@ void mcpwmOutput()
 #ifndef ESC3_DRIVER
 	// CH1 [1000..2000], Pin 13
 	// mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, rx_data->_channel[1].rx);
-	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, rx_data->channel[OutputChannel[1]].rx);
+	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, rx_data->channel[PwmOutputChannel[1]].rx);
 	// CH2, Pin 12
 	// mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, rx_data->_channel[2].rx);
-	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, rx_data->channel[OutputChannel[2]].rx);
+	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, rx_data->channel[PwmOutputChannel[2]].rx);
 #else
 	//  CH1 [1000..2000], Pin 15 (PHL)
 	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, rx_data->channel[1].rx);
@@ -559,19 +540,19 @@ void mcpwmOutput()
 #ifndef ESC2_DRIVER
 	// CH3, Pin 14
 	// mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, rx_data->_channel[3].rx);
-	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, rx_data->channel[OutputChannel[3]].rx);
+	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, rx_data->channel[PwmOutputChannel[3]].rx);
 	// CH4, Pin 27
 	// mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, rx_data->_channel[4].rx);
-	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, rx_data->channel[OutputChannel[4]].rx);
+	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, rx_data->channel[PwmOutputChannel[4]].rx);
 #endif
 #endif
 #ifndef ESC1_DRIVER
 	// CH5, Pin 33
 	// mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A, rx_data->_channel[5].rx);
-	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A, rx_data->channel[OutputChannel[5]].rx);
+	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A, rx_data->channel[PwmOutputChannel[5]].rx);
 	// CH6, Pin 32
 	// mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_B, rx_data->_channel[6].rx);
-	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_B, rx_data->channel[OutputChannel[6]].rx);
+	mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_B, rx_data->channel[PwmOutputChannel[6]].rx);
 #endif
 }
 
@@ -580,6 +561,7 @@ void mcpwmOutput()
 /// @param _last_proccess Last process time
 void SerialDebug(uint32_t cur_ms, uint32_t _last_proccess)
 {
+	char msg[20] = "";
 #ifndef DEBUG_RX_DATA
 	// Printf debug, line by line
 	switch (debugLine)
@@ -654,14 +636,55 @@ void SerialDebug(uint32_t cur_ms, uint32_t _last_proccess)
 	case 26:
 		if (debugCh <= rx_data->getNbChannels())
 		{
+#ifdef CRSF_COMMUNICATION
+			Serial.printf("Ch[%2i]: bin %4u, raw %4u rx %4u rxd %4u (us)", debugCh, rx_data->channel[debugCh].binary, rx_data->channel[debugCh].raw, rx_data->channel[debugCh].rx, rx_data->channel[debugCh].rxd);
+			Serial.printf(", Trig : %u, %u, %u, %u, %u, %u", rx_data->channel[debugCh].trigger.low, rx_data->channel[debugCh].trigger.lowD, rx_data->channel[debugCh].trigger.latchLow, rx_data->channel[debugCh].trigger.high, rx_data->channel[debugCh].trigger.highD, rx_data->channel[debugCh].trigger.latchHigh);
+#else
 			Serial.printf("Ch[%2i]: raw %4u rx %4u rxd %4u (us)", debugCh, rx_data->channel[debugCh].raw, rx_data->channel[debugCh].rx, rx_data->channel[debugCh].rxd);
 			Serial.printf(", Trig : %u, %u, %u, %u, %u, %u", rx_data->channel[debugCh].trigger.low, rx_data->channel[debugCh].trigger.lowD, rx_data->channel[debugCh].trigger.latchLow, rx_data->channel[debugCh].trigger.high, rx_data->channel[debugCh].trigger.highD, rx_data->channel[debugCh].trigger.latchHigh);
+#endif			
 			Serial.printf("\n");
 		}
 		debugLine++;
 		debugCh++;
 		break;
 	case 27:
+#ifdef MIX3P
+		debugCh = MIX3P;
+		Serial.printf("Multiswitch :\n");
+		Serial.printf("Mix3P ch[%2i]: bin %4u, raw %4u (us)", debugCh, rx_data->channel[debugCh].binary, rx_data->channel[debugCh].raw);
+		Serial.printf(", mix = %u", rx_data->channel[debugCh].mixVal);
+		Serial.printf(", Switch (");
+		for (int b = 7; b >= 0; b--)
+		{
+			//Serial.print(bitRead(rx_data->multi_switch, b));
+			Serial.print(rx_data->channel[debugCh].getSwitchBit(b));
+		}
+		Serial.printf("), Latch (");
+		for (int b = 7; b >= 0; b--)
+		{
+			//Serial.print(bitRead(rx_data->multi_switch, b));
+			Serial.print(rx_data->channel[debugCh].getSwitchLatch(b));
+		}
+		Serial.printf(")");
+		Serial.printf("\n");
+#elif MIX4
+		debugCh = MIX4;
+		Serial.printf("\n");
+		Serial.printf("Mix4 ch[%2i]: bin %4u, raw %4u (us)", debugCh, rx_data->channel[debugCh].binary, rx_data->channel[debugCh].raw);
+		Serial.printf(", mix = %u", rx_data->channel[debugCh].mixVal);
+		Serial.printf(", Switch (");
+		for (int b = 7; b >= 0; b--)
+		{
+			Serial.print(bitRead(rx_data->multi_switch, b));
+		}
+		Serial.printf(")");
+		Serial.printf("\n");
+#endif
+		debugLine++;
+		debugCh++;
+		break;
+	case 28:
 		debugLine = 40;	// 30;
 		break;
 	case 30:
@@ -755,6 +778,11 @@ void SoundTriggerSet()
 	}
 	masterVolume = masterVolumePercentage[volumeIndex]; // Write volume
 
+	// Fail safe > 1s
+	//if (!TON_Ready.getTON())
+	if (!rxReady)
+		return;
+
 	// Horn
 	// if (rx_data->channel[10].trigger.lowEdge) hornLatch = true;
 	if (HORN_TRIG)
@@ -771,6 +799,7 @@ void SoundTriggerSet()
 	// if (rx_data->channel[6].trigger.high || rx_data->channel[6].trigger.low) sound2Trigger = true;
 	if (SOUND2_TRIG)
 		sound2Trigger = true;
+
 }
 
 /// @brief Volume calculations for sound generator

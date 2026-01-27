@@ -34,6 +34,10 @@
 // Outputs
 #define OUTPUTS_MAX		12
 
+// EEPROM 
+//#define EEPROM_SIZE     256 	// 256 Bytes (512 is maximum)
+
+
 //
 // EOF
 //

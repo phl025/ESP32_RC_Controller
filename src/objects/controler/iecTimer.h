@@ -25,6 +25,9 @@ public:
     IecTimer(void);
     bool TON(bool input, uint32_t cur_ms, uint32_t delay);
     bool TOFF(bool input, uint32_t cur_ms, uint32_t delay);
+	//	
+	inline bool getTON(void) const {return (ton);};
+	inline bool getTOFF(void) const {return (toff);};
 	//
 
 };

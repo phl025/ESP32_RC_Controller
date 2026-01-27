@@ -23,7 +23,8 @@ Outputs::Outputs(void) // Constructor (called, when new ojects of that class are
 			gpio_error_ = gpio_set_direction((gpio_num_t)pins_[i], GPIO_MODE_OUTPUT);
 			if (gpio_error_ == ESP_OK)
 			{
-				channel[i] = statusLED(false);
+				//channel[i] = statusLED(false);
+				channel[i] = OutputLED(false);
 				channel[i].begin(pins_[i], i + 2, 20000); // Timers 2 to 14
 				channel[i].off(0, 0);
 			}
@@ -31,6 +32,19 @@ Outputs::Outputs(void) // Constructor (called, when new ojects of that class are
 	}
 }
 
+/*
+void outputLED::begin(int pin1, int channel, int frequency, int resolution) {
+    _pin1 = pin1;
+    _channel = channel;
+    _frequency = frequency;
+    ledcSetup(_channel, _frequency, resolution); // 8 bit resolution, if no input argument
+    ledcAttachPin(_pin1, _channel);
+    if (_inverse) ledcWrite(_channel, 255);
+    else ledcWrite(_channel, 0);
+    // Save current value (Add by PHL025)
+    _brightness = 0;
+}
+*/
 //
 // EOF
 //

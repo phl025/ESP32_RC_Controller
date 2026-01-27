@@ -13,81 +13,6 @@
 
 // Class definition (methodes)
 
-/*
-// ESC Mode (AVR)
-#define MODE_STOP 0
-#define MODE_FWD 1
-#define MODE_REV 2
-#define MODE_EMG 99
-// ESC ramps (AVR)
-#define RAMP_ACC 10    // Accel ramp : acceleration neutre -> AV ou neutre -> AR
-#define RAMP_DEC 10    // Decel ramp : decelleration AV ou AR vers neutre
-
-/// @brief EscDriver class, Driver for RC motor ESC
-class EscDriver
-{
-private:
-	// data
-	int _number = 1;
-	mcpwmunit__t unit_;
-	mcpwmtimer__t timer_;
-	mcpwm_io_signals_t _chanelA;
-	mcpwm_io_signals_t _chanelB;
-	uint8_t drag_brake_ = 10;
-
-	// For ESC ramp up/down
-	uint16_t escRampTimeMs_ = 20;	// Time base for ESP ramp process (ms) (Ex for BOAT)
-	uint16_t escRampAcc_ = 2000;	// Acceleration time ramp (ms), Example = 1000 = 1s
-	uint16_t escRampDec_ = 2000;	// Decceleration time ramp (ms), Example = 1000 = 1s
-	static uint32_t lastEscMs_;
-		
-	/-*
-	int _driveState;				// Driver status machine
-	uint8_t escRampTimeMs_ = 20;	// Time base for ESP management (ms) (BOATmode_)
-	uint8_t escRampAcc_ = 8;		// Acceleration rampe (µs), ~ 450 / escRampAcc * escRampTimeMs, Example = 450/9*20 -> 1s
-	uint8_t escRampDec_ = 8;		// Decceleration rampe (µs), ~ 450 / escRampDec * escRampTimeMs, Example = 450/9*20 -> 1s
-	uint32_t _escMillis;
-	uint32_t _lastDebugTime;
-	*-/
-
-	// Type AVR
-	// Signal configuration
-	uint16_t neutre_ = 1500;		// Neutre position [1500]
-	uint16_t neutre_min_ = 1480;	// Neutre mini [<1500]
-	uint16_t neutre_max_ = 1520;	// Neutre maxi [>1500]
-	uint16_t val_max_ = 2000;     	// 1500 + 420 //450
-	uint16_t val_min_ = 1000;     	// 1500 - 420 //450
-	uint8_t mode_ = MODE_EMG;		// Mode : EMG / STOP / FWD / REV
-	// Status
-	bool neutre_ok_ = false;		// Neutre passed
-	uint16_t last_value_;			// Last rx value
-	uint16_t signal_pwm_ = 0;     	// Signal for PWM command [1000..2000]
-
-
-	// Debug
-	int motorPwm_;
-	//char _msg[50];
-	
-	// Methode
-	//long map(long x, long in_min, long in_max, long out_min, long out_max);
-
-public:
-	// Methode
-	EscDriver(int number, mcpwmunit__t unit, mcpwmtimer__t timer, mcpwm_io_signals_t chanelA, mcpwm_io_signals_t chanelB, int pinA, int pinB, uint32_t frequency);
-	~EscDriver();
-	//
-	void set_pwm(uint8_t pwmA, uint8_t pwmB);
-	void update(uint16_t rx_value, bool debug);
-	void updateRamp(uint16_t rx_value, bool debug);
-	//
-	void rampAVR(uint16_t rx_value, uint32_t cur_ms);
-	uint16_t Speed_Ramp(uint16_t in_val);
-    //
-    int get_pwm();
-};
-*/
-
-
  /// @brief Construct a new EscDriver object, with parameters
  /// @param number ESC number
  /// @param unit MCPWM unit, MCPWMunit__0 or MCPWMunit__1
@@ -132,6 +57,7 @@ EscDriver::~EscDriver()
 	setPwm(0, 0);
 }
 
+
 /// @brief Set PWM for both chanels
 /// @param pwmA PWM value, chanel A, Forward [0..255]
 /// @param pwmB PWM value, chanel B, Reverse [0..255]
@@ -168,28 +94,19 @@ void EscDriver::update(uint16_t rx_value, bool debug)
 	uint16_t escSignal;
 	uint8_t motorDriverDuty;
 	
-	//escSignal = map(rx_value, escPulseMin, escPulseMax, 1000, 2000);
-	//escSignal = map(rx_value, 1000, 2000, 1000, 2000);
 	escSignal = rx_value;
 	//
-	if (escSignal > neutre_max_)	//1520)
+	if (escSignal > neutre_max_)		// 1520
 	{ 	// Forward
-		//motorDriverDuty = min(map(escSignal, 1500, 2000, 0, 100), 100L);
 		motorDriverDuty = min(map(escSignal, neutre_max_, 2000, out_min_, out_max_), 100L);
 		setPwm(motorDriverDuty, 0);
 		motorPwm_ = motorDriverDuty;
-		//if (debug) 
-			//snprintf(_msg, 50, "- ESC %i : FW, rx %u, pwm %u\n", _number, rx_value, motorDriverDuty);
-			// Serial.printf("- ESC 1 : FW, rx %u, pwm %u\n", rx_value, motorDriverDuty);
 	}
-	else if (escSignal < neutre_min_)	//1480)
+	else if (escSignal < neutre_min_)	// 1480
 	{ 	// Reverse
-		//motorDriverDuty = min(map(escSignal, 1500, 1000, 0, 100), 100L);
 		motorDriverDuty = min(map(escSignal, neutre_min_, 1000, out_min_, out_max_), 100L);
 		setPwm(0, motorDriverDuty);
 		motorPwm_ = (int8_t)(0-motorDriverDuty);
-		//if (debug) 
-			// Serial.printf("- ESC 1 : RW, rx %u, pwm %u\n", rx_value, motorDriverDuty);
 	}
 	else
 	{	// Neutral
@@ -197,22 +114,18 @@ void EscDriver::update(uint16_t rx_value, bool debug)
 		motorPwm_ = 0;
 		// Both pins pwm @ the same time = variable drag brake
 		setPwm(drag_brake_, drag_brake_);
-		//if (debug) 
-			//Serial.printf("- ESC 1 : No, rx %u, pwm %u\n", rx_value, motorDriverDuty);
 	}
 }
 
 
-/// @brief Update ESC output, whith rampe up/down
-/// @param rx_value 
-/// @param debug 
+/// @brief Update ESC output, whith rampe up/down (NOK)
+/// @param rx_value Rx value (500..2000)
+/// @param debug Enable printf for debug
 void EscDriver::updateRamp(uint16_t rx_value, bool debug)
 {
 	uint16_t escSignal;
 	uint8_t motorDriverDuty;
 	
-	//escSignal = map(rx_value, escPulseMin, escPulseMax, 1000, 2000);
-	//escSignal = map(rx_value, 1000, 2000, 1000, 2000);
 	escSignal = rx_value;
 	//
 	if (escSignal > 1520)
@@ -220,17 +133,12 @@ void EscDriver::updateRamp(uint16_t rx_value, bool debug)
 		motorDriverDuty = min(map(escSignal, 1500, 2000, 0, 100), 100L);
 		setPwm(motorDriverDuty, 0);
 		motorPwm_ = motorDriverDuty;
-		//if (debug) 
-			//snprintf(_msg, 50, "- ESC %i : FW, rx %u, pwm %u\n", _number, rx_value, motorDriverDuty);
-			// Serial.printf("- ESC 1 : FW, rx %u, pwm %u\n", rx_value, motorDriverDuty);
 	}
 	else if (escSignal < 1480)
 	{ 	// Reverse
 		motorDriverDuty = min(map(escSignal, 1500, 1000, 0, 100), 100L);
 		setPwm(0, motorDriverDuty);
 		motorPwm_ = (int8_t)(0-motorDriverDuty);
-		//if (debug) 
-			// Serial.printf("- ESC 1 : RW, rx %u, pwm %u\n", rx_value, motorDriverDuty);
 	}
 	else
 	{	// Neutral
@@ -238,8 +146,6 @@ void EscDriver::updateRamp(uint16_t rx_value, bool debug)
 		motorPwm_ = 0;
 		// Both pins pwm @ the same time = variable drag brake
 		setPwm(drag_brake_, drag_brake_);
-		//if (debug) 
-			//Serial.printf("- ESC 1 : No, rx %u, pwm %u\n", rx_value, motorDriverDuty);
 	}
 }
 
@@ -286,8 +192,6 @@ void EscDriver::rampAVR(uint16_t rx_value, uint32_t cur_ms)
 uint16_t EscDriver::speedRamp(uint16_t in_val) 
 {
 	unsigned int val = in_val;
-	//uint16_t rampAcc = 1000 / (escRampAcc_ / escRampTimeMs_);		//escRampAcc_, escRampDec_, 
-	//uint16_t rampDec = 1000 / (escRampDec_ / escRampTimeMs_);
 	uint16_t rampAcc = (val_max_ - val_min_) / (escRampAcc_ / escRampTimeMs_);		//escRampAcc_, escRampDec_, 
 	uint16_t rampDec = (val_max_ - val_min_) / (escRampDec_ / escRampTimeMs_);
 
@@ -335,9 +239,6 @@ uint16_t EscDriver::speedRamp(uint16_t in_val)
 	last_value_ = val;
 	return val;
 }
-
-
-
 
 /*
 void EscDriver::escBoat(uint16_t rx_value)
@@ -475,3 +376,6 @@ void EscDriver::escBoat(uint16_t rx_value)
 }
 */
 
+//
+// EOF
+//

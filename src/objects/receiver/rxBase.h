@@ -11,6 +11,7 @@
 // Objects
 #include "objects/global.h"
 #include "objects/receiver/RxChannel.h"
+//#include "objects/receiver/RxMultiSwitch.h"
 
 // RX Status
 #define RXREADY 1
@@ -23,12 +24,15 @@ class RxBase
 // Data
 public:
 	RxChannel channel[MAX_CHANNELS + 1];	// RX channel objects
+	//RxMSwitch mSwitch;
 	//
-	volatile bool new_data = false;		// New RX data present
+	volatile bool new_data = false;			// New RX data present
 	volatile bool ready = false;			// RX Ready (not Failsafe)
 	volatile bool failSafe = true;			//
-	volatile int16_t error = 0;			// Error code for debug
+	volatile int16_t error = 0;				// Error code for debug
 	volatile uint32_t delta_us_proccess;	// Delta time proccessed
+	//
+	///volatile uint8_t multi_switch = 0x0;	// Test for multi-switch decodeur (PHL)
 
 protected:
 	bool *rev_channel_;
@@ -36,8 +40,8 @@ protected:
 	int *int_channel_;
 	//
 	uint16_t nb_channels_ = MAX_CHANNELS;
-	volatile uint32_t last_rx_time_diff_;		// Last time rx recived
-	volatile uint32_t last_us_proccess_;		// Last time proccessed
+	volatile uint32_t last_rx_time_diff_;	// Last time rx recived
+	volatile uint32_t last_us_proccess_;	// Last time proccessed
 	//
 	volatile uint32_t timelast_ = 0;
 	volatile uint32_t last_good_read_ = 0;
@@ -59,24 +63,17 @@ public:
 	uint8_t getBuffer(int index) const {return 0;}
 	uint8_t getBufferLen() const {return 8;}
 
-	/* Change to inline
-	int getNbChannels();
-	uint32_t GetItCount();
-	uint32_t GetRdCount();
-	uint32_t GetLastProccess();
-	//uint8_t getBuffer(int index);
-	*/
 	// Inline function
 	inline int getNbChannels() const {return nb_channels_;}
 	inline uint32_t GetItCount() const {return it_count_;}
 	inline uint32_t GetRdCount() const {return rd_count_;}
 	inline uint32_t GetLastProccess()  const {return last_us_proccess_;}
+	// Multi switch (move to rxChannel)
+	//inline bool getMultiSwitch(int bit) const {return ((multi_switch >> bit) & 0x01);}		// bitRead(mixVal, bit);}
+
 
 protected :
-	void processRawChannels(int failsafe_channel, uint32_t cur_us, uint32_t delta_us);
 	// Obsolete :
-	//void processRawChannels(bool ready, uint32_t cur_us, uint32_t delta_us);
-	//void processRawChannels(int failsafe_channel, int* p_channelFailSafe, bool* p_channelReversed);
 	void processFailSafe();
 
 };

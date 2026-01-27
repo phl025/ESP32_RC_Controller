@@ -57,7 +57,7 @@ void RxPwm::setNewRead(uint32_t cur_us)
 /// @brief RxPwm, update channels data
 /// @param cur_us current timer (us), use micros()
 /// @param p_chValue channel[] value as us [500..2500]
-void RxPwm::updateChannels(uint32_t cur_us, uint32_t *p_chValue) // uint32_t ch1, uint32_t ch2, uint32_t ch3, uint32_t ch4, uint32_t ch5, uint32_t ch6)
+void RxPwm::updateChannels(uint32_t cur_us, uint32_t *p_chValue)
 {
 	// Delta us
 	uint32_t _delta_us = timeDiff(cur_us, last_good_read_);

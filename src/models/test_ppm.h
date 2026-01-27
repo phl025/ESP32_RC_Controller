@@ -92,7 +92,7 @@ int channelFailSafe[17] = {
 };
 
 // Output channels definition (Not avalable for PWM mode) [1..6]: PWM1 .. PWM6
-int OutputChannel[7] = {
+int PwmOutputChannel[7] = {
 	0,		// CH0 (unused)
 	0,		// CH1 or ESC3
 	0,		// CH2 or ESC3

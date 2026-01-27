@@ -51,7 +51,7 @@ RxBase::RxBase(int channels, int *p_chFailSafe, int *p_chIntegrator, bool *p_chR
 	for (int i = 0; i < MAX_CHANNELS; i++)
 	{
 		channel[i] = RxChannel(p_chFailSafe[i], p_chIntegrator[i], p_chReversed[i]);
-		channel[i].raw = 1500;
+		channel[i].raw = p_chFailSafe[i];	//1500;
 	}
 }
 
@@ -81,12 +81,26 @@ void RxBase::processRawChannels(uint32_t cur_us)
 	delta_us_proccess = timeDiff(cur_us, last_us_proccess_);
 
 	// Failsafe active ?
+	if (failSafe)	// || !ready)
+	{
+		// Failsafe process
+		processFailSafe();
+	}
+	// Process alls chanels
+	for (int i = 1; i <= nb_channels_; i++)
+	{
+		// Channel process (raw conversion, integrator, edges...)
+		channel[i].process(delta_us_proccess, cur_us, failSafe);
+	}
+	
+	/*
+	// Failsafe active ?
 	if (!failSafe && ready)
 	{
 		// Process alls chanels
 		for (int i = 1; i <= nb_channels_; i++)
 		{
-			//
+			// Channel process (raw conversion, integrator, edges...)
 			channel[i].process(delta_us_proccess, cur_us);
 			/*
 			// Raw
@@ -124,83 +138,16 @@ void RxBase::processRawChannels(uint32_t cur_us)
 
 			// Save
 			last_rx_ch[i] = rx_channel[i];
-			*/
+			*-/
 		}
 	}
 	else
 		// Failsafe process
 		processFailSafe();
+	*/
 	//
 	last_us_proccess_ = cur_us;
 }
-
-/// @brief Process raw channels (for PPM)
-/// @param failsafe_ch Channel used for FailSafe control.
-/// @param cur_us Current time (us)
-/// @param delta_us Delta process (us)
-void RxBase::processRawChannels(int failsafe_ch, uint32_t cur_us, uint32_t delta_us)
-{
-	bool failSafe = true;
-
-	// Failsafe check for RC signals
-	if (failsafe_ch > 0)
-		failSafe = (channel[failsafe_ch].raw < 500 || channel[failsafe_ch].raw > 2500);
-
-	// Failsafe active ?
-	if (!failSafe)
-	{
-		// Process alls chanels
-		for (int i = 1; i <= nb_channels_; i++)
-		{
-			channel[i].process(delta_us_proccess, cur_us);
-			/*
-			// Raw
-			_raw_value = raw_channel[i];
-			// Curve : Not implemented
-			//if (curveExponentialThrottle != null)
-			//	raw_value = reMap(curveExponentialThrottle, raw_channel[i]);
-			// Output
-			if (!rev_channel[i])
-				// Normal
-				rx_channel[i] = _raw_value;
-			else
-				// Reversed
-				rx_channel[i] = map(_raw_value, 0, 3000, 3000, 0);
-			// Save
-			last_rx_ch[i] = rx_channel[i];
-			*/
-		}
-	}
-	else
-		// Failsafe process
-		processFailSafe();
-	//
-	last_us_proccess_ = cur_us;
-}
-
-/// @brief Process raw channels (Obsolete)
-/// @param ready Ready, Failsafe detect by communication.
-/// @param cur_us Current time (us)
-/// @param delta_us Delta process (us)
-/*
-void RxBase::processRawChannels(bool ready, uint32_t cur_us, uint32_t delta_us)
-{
-	// Failsafe active ?
-	if (ready)
-	{
-		// Process alls chanels
-		for (int i=1; i<=nb_channels_; i++)
-		{
-			channel[i].process(delta_us, cur_us);
-		}
-	}
-	else
-		// Failsafe process
-		processFailSafe();
-	//
-	last_us_proccess_ = cur_us;
-}
-*/
 
 /// @brief Set FailSafe RC Signals
 void RxBase::processFailSafe()
@@ -209,10 +156,13 @@ void RxBase::processFailSafe()
 	for (int i = 1; i <= nb_channels_; i++)
 	{
 		if (fs_channel_[i] >= 0)
-			channel[i].rx = fs_channel_[i];
+			channel[i].raw = fs_channel_[i];
+			//channel[i].rx = fs_channel_[i];
 		else
-			channel[i].rx = channel[i].last_rx;
+			//channel[i].rx = channel[i].last_rx;
+			channel[i].raw = channel[i].last_rx;
 		// Integrator
+		channel[i].rx = channel[i].raw;
 		channel[i].rxd = channel[i].rx;
 	}
 }
@@ -241,16 +191,12 @@ uint32_t RxBase::timeDiff(uint32_t cur, uint32_t last)
 /// @brief Set raw rx_channel value
 /// @param channel_nb Channel number [0..MAX_CHANNELS]
 /// @param Value [500..2500] us, return 0 if channel < 0 or > MAX_CHANNELS
-/// @return Error
 void RxBase::setRawChannel(int channel_nb, uint16_t value)
 {
 	if ((channel_nb >= 0) && (channel_nb <= nb_channels_))
 	{
 		channel[channel_nb].raw = value;
-		// return false;
 	}
-	// Error
-	// return true;
 }
 
 /// @brief Return rx_channel value (processed)
@@ -263,7 +209,6 @@ uint16_t RxBase::getRxChannel(int channel_nb)
 	if (channel_nb > MAX_CHANNELS)
 		channel_nb = 0;
 	//
-	// return rx_channel[channel];
 	return channel[channel_nb].rx;
 }
 
@@ -279,41 +224,6 @@ bool RxBase::Get_NewData(void)
 	else
 		return false;
 }
-
-/* Change to inline
-
-/// @brief
-/// @param index
-/// @return
-uint8_t RxBase::getBuffer(int index)
-{
-	return 0;
-}
-
-/// @brief Return nb_channels configured
-/// @return Value
-int RxBase::getNbChannels()
-{
-	return nb_channels;
-}
-
-/// @brief
-/// @return
-uint32_t RxBase::GetItCount()
-{ return 0;}
-
-/// @brief
-/// @return
-uint32_t RxBase::GetRdCount()
-{ return 0;}
-
-/// @brief Return last_proccess time (us)
-/// @return Status
-uint32_t RxBase::GetLastProccess()
-{
-	return last_us_proccess;
-}
-*/
 
 //
 // EOF

@@ -26,6 +26,7 @@ public:
 
     // Return current channel value (1-based) in us
     int getChannel(unsigned int ch) const { return _channels[ch - 1]; }
+    int getRawChannel(unsigned int ch) const { return _raw[ch - 1]; }           // Add PHL
     const crsfLinkStatistics_t *getLinkStatistics() const { return &_linkStatistics; }
     const crsf_sensor_gps_t *getGpsSensor() const { return &_gpsSensor; }
     const crsf_sensor_vario_t *getVarioSensor() const { return &_varioSensor; }
@@ -52,6 +53,7 @@ private:
     uint32_t _lastChannelsPacket;
     bool _newChannelsPacket;            // Add PHL, new channel packet revive
     bool _linkIsUp;
+    int _raw[CRSF_NUM_CHANNELS];        // Add PHL, raw value 2^11 = [0..2048]
     int _channels[CRSF_NUM_CHANNELS];
 
     void handleSerialIn();
