@@ -161,13 +161,14 @@ int32_t EscDriver::getPwm ()
 /// @brief ESC with ramp (idem AVR)
 /// @param rx_value Rx value command [1000..2000]
 /// @param cur_ms Current us
-void EscDriver::rampAVR(uint16_t rx_value, uint32_t cur_ms)
+/// @param enable Engine enabled
+void EscDriver::rampAVR(uint16_t rx_value, uint32_t cur_ms, bool enable)
 {
 	// Stop command
 	if ((rx_value > neutre_min_) && (rx_value < neutre_max_))
 		neutre_ok_ = true;
 	// Stop passed
-	if (neutre_ok_)
+	if (neutre_ok_ && enable)
 	{
 		// Every ms
 		if (cur_ms - lastEscMs_ > escRampTimeMs_)

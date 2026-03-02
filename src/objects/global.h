@@ -1,6 +1,7 @@
 //
 // Global definitions
 //
+//#include "my_setup/TFT_eSPI_Setup.h"
 
 // For all modes
 #define MAX_CHANNELS	16		// CRSF, SBUS...
@@ -11,9 +12,6 @@
 
 // PWM Rx
 #define MAX_PWM_CHANNELS 6		// Input CH1 to CH6
-//#define ISR_INSIDE			// Interrupt on RX_PWM class (Prefered) - OK (2025-11)
-//#define PWM_GPIO_LOCAL        // Use GPIO_ISR (GPIO ISR defined on main.cpp - Removed)
-//#define PWM_RTM               // Use RTM (NOK - Removed)
 
 // PPM - PWM
 #define FAILSAFE_CHANNEL 3
@@ -33,6 +31,13 @@
 
 // Outputs
 #define OUTPUTS_MAX		12
+
+// Dashboard
+// TFT 0.96 inch, 80x160, 16 bit color, driver ST7735 : Config dans platformio.ini
+//#define STD_DASHBOARD
+#define FREVIC_DASHBOARD
+// TFT 1.3 inch, 240x240, 16 bit color, driver ST7789 : Config dans platformio.ini
+//#define NAVY_DASHBOARD
 
 // EEPROM 
 //#define EEPROM_SIZE     256 	// 256 Bytes (512 is maximum)

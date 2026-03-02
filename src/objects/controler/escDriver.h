@@ -73,7 +73,7 @@ public:
 	void update(uint16_t rx_value, bool debug);
 	void updateRamp(uint16_t rx_value, bool debug);
 	//
-	void rampAVR(uint16_t rx_value, uint32_t cur_ms);
+	void rampAVR(uint16_t rx_value, uint32_t cur_ms, bool enable);
     //
 
 private:

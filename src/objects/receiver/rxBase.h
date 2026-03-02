@@ -14,6 +14,7 @@
 //#include "objects/receiver/RxMultiSwitch.h"
 
 // RX Status
+#define RX_READY_COUNT 20		// Number of good read to be ready (20 = 200ms with 10ms update)// PHL 2026-01
 #define RXREADY 1
 #define RXFAILSAFE -1
 #define RX_COMMUNICATION_LOST -2
@@ -43,10 +44,12 @@ protected:
 	volatile uint32_t last_rx_time_diff_;	// Last time rx recived
 	volatile uint32_t last_us_proccess_;	// Last time proccessed
 	//
+	volatile uint16_t readyCount_ = 0;		// RX Ready count (Added PHL 2026-01)
+	//
 	volatile uint32_t timelast_ = 0;
 	volatile uint32_t last_good_read_ = 0;
-	volatile uint32_t it_count_ = 0;
-	volatile uint32_t rd_count_ = 0;
+	volatile uint32_t it_count_ = 0;		// Interrupt count for diagnostic
+	volatile uint32_t rd_count_ = 0;		// Read count, for diagnostic
 	
 // Methodes
 public:
@@ -68,6 +71,7 @@ public:
 	inline uint32_t GetItCount() const {return it_count_;}
 	inline uint32_t GetRdCount() const {return rd_count_;}
 	inline uint32_t GetLastProccess()  const {return last_us_proccess_;}
+	inline uint16_t GetReadyCount()  const {return readyCount_;}
 	// Multi switch (move to rxChannel)
 	//inline bool getMultiSwitch(int bit) const {return ((multi_switch >> bit) & 0x01);}		// bitRead(mixVal, bit);}
 

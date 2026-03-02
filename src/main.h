@@ -41,14 +41,43 @@
 #include "objects/soundPlayer.h"			// Sound player - PHL
 #include "objects/eepromData.h"				// EEPROM Data ()
 
+// Configuration : model
+#include "0_Model.h"
+
 // Ext_src : TheDIYGuy999 source code
 // SBUS (Test idem RC_Engine_Sound_V9.13)
 #if defined EMBEDDED_SBUS
 #include "src_ext/sbus.h" // For SBUS interface
 #endif
 
-// Configuration : model
-#include "0_Model.h"
+// Standard dashboard (TheDIYGuy999 / RC_Engine_Sound_V9.13)
+#if defined STD_DASHBOARD		
+//#include "tft_setup.h"		// For TFT display configuration (TFT_eSPI library)
+#include "src_ext/dashboard_std.h"
+Dashboard dashboard;
+#define MAX_REAL_SPEED 120 // km/h, for speedometer calibration
+
+// Frevic dashboard (TheDIYGuy999 / RC_Engine_Sound_V9.13)
+#elif defined FREVIC_DASHBOARD
+//#include "tft_setup.h"		// For TFT display configuration (TFT_eSPI library)
+#include "src_ext/dashboard_frevic.h"
+Dashboard dashboard;
+#define MAX_REAL_SPEED 120 		// km/h, for speedometer calibration
+
+#elif defined NAVY_DASHBOARD
+//#include "tft_setup.h"		// For TFT display configuration (TFT_eSPI library)
+#include "objects/dashboard_navy.h"
+Dashboard dashboard;
+#define MAX_REAL_SPEED 60 		// km/h, for speedometer calibration
+
+#endif
+
+// For 0.96 or 1.3 inch display rotation
+#ifdef ST7789_DRIVER
+#define TFT_ROTATION 0		// 0, 1, 2 or 3 (0 = portrait, connector on top, 1 = landscape, connector on right, 2 = portrait, connector on bottom, 3 = landscape, connector on left)
+#else
+#define TFT_ROTATION 3		// 0, 1, 2 or 3 (0 = portrait, connector on top, 1 = landscape, connector on right, 2 = portrait, connector on bottom, 3 = landscape, connector on left)
+#endif
 
 #pragma endregion INCLUDE_ZONE
 

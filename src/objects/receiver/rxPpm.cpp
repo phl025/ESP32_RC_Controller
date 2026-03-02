@@ -158,7 +158,8 @@ void RxPpm::IT_Ppm(uint32_t cur_us)
 				ppm_in_[i] = 0;
 			}
 			last_good_read_ = cur_us;
-			ready = true;
+			if (this->readyCount_ < 65535) this->readyCount_++;
+			ready = readyCount_ > RX_READY_COUNT;
 			new_ppm_data_ = true;		// New data
 			//average_cnt_ = 0;
 		}
@@ -198,7 +199,8 @@ void RxPpm::updateChannels(uint32_t cur_us)
 		}
 		new_ppm_data_ = false;
 		//
-		ready = true;
+		if (this->readyCount_ < 65535) this->readyCount_++;
+		ready = readyCount_ > RX_READY_COUNT;
 		new_data = true;
 		failSafe = false;
 		last_good_read_ = cur_us;
@@ -217,6 +219,7 @@ void RxPpm::updateChannels(uint32_t cur_us)
 		// FailSafe channel
 		ppm_buf_[FAILSAFE_CHANNEL-1] = 0;
 		failSafe = true;
+		readyCount_ = 0;
 		ready = false;
 		new_data = true;
 		counter_ = 0;

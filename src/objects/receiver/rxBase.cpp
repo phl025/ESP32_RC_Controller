@@ -81,7 +81,8 @@ void RxBase::processRawChannels(uint32_t cur_us)
 	delta_us_proccess = timeDiff(cur_us, last_us_proccess_);
 
 	// Failsafe active ?
-	if (failSafe)	// || !ready)
+	//if (failSafe)	// || !ready)
+	if (!ready)	
 	{
 		// Failsafe process
 		processFailSafe();

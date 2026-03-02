@@ -78,7 +78,8 @@ void RxPwm::updateChannels(uint32_t cur_us, uint32_t *p_chValue)
 	{
 		new_pwm_data_ = false;
 		//
-		ready = true;
+		if (this->readyCount_ < 65535) this->readyCount_++;
+		ready = readyCount_ > RX_READY_COUNT;
 		new_data = true;
 		failSafe = false;
 		last_good_read_ = cur_us;
@@ -92,6 +93,7 @@ void RxPwm::updateChannels(uint32_t cur_us, uint32_t *p_chValue)
 		//  FailSafe channel
 		channel[0].raw = 0;
 		failSafe = true;
+		readyCount_ = 0;
 		ready = false;
 		new_data = true;
 		counter_ = 0;
@@ -303,7 +305,8 @@ void RxPwm::updateChannels(uint32_t cur_us)
 	{
 		new_pwm_data_ = false;
 		//
-		ready = true;
+		if (this->readyCount_ < 65535) this->readyCount_++;
+		ready = readyCount_ > RX_READY_COUNT;
 		new_data = true;
 		failSafe = false;
 		last_good_read_ = cur_us;
@@ -320,6 +323,7 @@ void RxPwm::updateChannels(uint32_t cur_us)
 		//  FailSafe channel
 		channel[0].raw = 0;
 		failSafe = true;
+		readyCount_ = 0;
 		ready = false;
 		new_data = true;
 		counter_ = 0;

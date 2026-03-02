@@ -87,7 +87,8 @@ void IRAM_ATTR RxSbus::updateChannels(uint32_t cur_us)
 			//channel[i].raw = map(_SBUSchannels[i-1], 172, 1811, 1000, 2000);
 			channel[i].raw = map(_SBUSchannels[i-1], 172, 1812, 1000, 2000);		// 992-820, 992+820 - PHL
 		}
-		ready = true;
+		if (this->readyCount_ < 65535) this->readyCount_++;
+		ready = readyCount_ > RX_READY_COUNT;
 		failSafe = false;
 		new_data = true;
 		last_good_read_ = cur_us;
@@ -98,6 +99,7 @@ void IRAM_ATTR RxSbus::updateChannels(uint32_t cur_us)
 	if ((_delta_us > 1000000L) && ready)
 	{
 		failSafe = true;
+		readyCount_ = 0;
 		ready = false;
 		new_data = true;
 		error = -3;			// For debug

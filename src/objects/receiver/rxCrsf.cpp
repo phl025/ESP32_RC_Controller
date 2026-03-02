@@ -84,13 +84,15 @@ void IRAM_ATTR RxCrsf::updateChannels(uint32_t cur_us)
 		if (_crsf.newChannelsPacket())
 		{
 			this->rd_count_++;
+			if (this->readyCount_ < 65535) this->readyCount_++;
 			// Proportional channels (in Microseconds)
 			for (int i = 1; i <= nb_channels_; i++)
 			{
 				this->channel[i].binary = _crsf.getRawChannel(i);
 				this->channel[i].raw = _crsf.getChannel(i);
 			}
-			this->ready = true;
+			//this->ready = true;
+			ready = readyCount_ > RX_READY_COUNT;
 			this->new_data = true;
 			this->last_good_read_ = cur_us;
 			this->error = 1; // For debug
@@ -98,6 +100,7 @@ void IRAM_ATTR RxCrsf::updateChannels(uint32_t cur_us)
 	}
 	else
 	{
+		this->readyCount_ = 0;
 		this->ready = false; // For base_rx, failSafe
 		error = -2;			 // For debug
 	}
@@ -108,6 +111,7 @@ void IRAM_ATTR RxCrsf::updateChannels(uint32_t cur_us)
 #ifdef CHANNEL_DEBUG
 		Serial.printf("Timeout (%is)", timediff);
 #endif
+		this->readyCount_ = 0;
 		this->ready = false;
 		this->new_data = true;
 		this->error = -3; // For debug

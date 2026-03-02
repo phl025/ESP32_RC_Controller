@@ -24,6 +24,8 @@
 
 #include "main.h"
 
+//#include "my_setup/TFT_eSPI_Setup.h"
+
 // Local functions
 void Task1code(void *pvParameters);
 void setupMcpwm();
@@ -31,6 +33,9 @@ void setupEEprom();
 void mcpwmOutput();
 void outputUpdate();
 void SerialDebug(uint32_t cur_ms, uint32_t _last_proccess);
+#if defined STD_DASHBOARD or defined FREVIC_DASHBOARD
+void updateDashboard();
+#endif
 // void TriggerSet();
 void SoundTriggerSet();
 
@@ -271,6 +276,17 @@ void setup()
 	// EEPROM Setup
 	setupEEprom();
 
+#if defined STD_DASHBOARD or defined FREVIC_DASHBOARD or defined NAVY_DASHBOARD
+	// Dashboard setup
+	Serial.printf("* Setup DASHBOARD :\n");
+	Serial.printf("* - Pins 18 (sidelights), 19 (beacon2), 21 (beacon1), 23 (shaker) not usable for Outputs !\n");
+	//Serial.printf("-------------------------------------\n");
+	dashboard.init(TFT_ROTATION);	//(dashRotation);
+	//dashboard.init(3);	//(dashRotation);
+	Serial.printf("* -> Dashboard initialized\n");
+	
+#endif
+
 	// TCY
 	minTcy = 4294967295;
 	maxTcy = 0;
@@ -318,20 +334,21 @@ void loop()
 		// Multi switch mixer (Need CRSF / SBUS protocol) - Not tested with PWM/PPM protocol(2026-01)
 #ifdef MIX3P
 		// Use 'Mix3P.lua', Tested with TX16S / RH3-P (CRSF)
-		rx_data->channel[MIX3P].GetMix3P(rx_data->failSafe);
+		rx_data->channel[MIX3P].GetMix3P(!rx_data->ready);	//(rx_data->failSafe);
 #elif MIX4
 		// Use 'Mix4.lua', Tested with TX16S / RH3-P (CRSF)
-		rx_data->channel[MIX4].GetMix4(rx_data->failSafe);
+		rx_data->channel[MIX4].GetMix4(!rx_data->ready);
 #endif
 		//
 		mcpwmOutput(); 	// PWM servo signal output
 		// Esc 1
 		if (esc_1 != NULL)
 		{
-			// esc_1->rampAVR(rx_data->channel[ESC1_CH].rx, cur_ms);	// Rampe managed by ESC (old)
-			esc_1->update(rx_data->channel[ESC1_CH].rxd, false); // Rampe managed by channel[].rxd
-			currentPwm = abs(esc_1->getPwm());					 // [0..100] %
-			currentRpm = currentPwm * 5;						 // [0..500]
+			// Ramp managed by ESC (like ATiny85 ESC)
+			esc_1->rampAVR(rx_data->channel[ESC1_CH].rx, cur_ms, engineOn);	//, rx_data->ready);	
+			//esc_1->update(rx_data->channel[ESC1_CH].rxd, false); 	// Rampe managed by channel[].rxd
+			currentPwm = abs(esc_1->getPwm());					 	// [0..100] %
+			currentRpm = currentPwm * 5;						 	// [0..500]
 		}
 		else
 		{
@@ -349,15 +366,15 @@ void loop()
 		//
 		// IEC Timer
 		//
-		TON_Pwm_0.TON((currentPwm == 0), cur_ms, 20000); 		// 20s
+		TON_Pwm_0.TON((currentPwm == 0) && (engineState != STARTING), cur_ms, 20000); 		// 20s
 		rxReady = TON_Ready.TON((!rx_data->failSafe), cur_ms, 1000); 		// 1s
 		//
 		// Engine sound
 		//
-		if (rx_data->channel[THROTTLE].rxd > 1600 && !engineOn)		// 1500 + 20%
-			engineOn = true;
 		if ((rx_data->failSafe || TON_Pwm_0.ton) && engineOn)
 			engineOn = false;
+		if (rx_data->channel[THROTTLE].rxd > 1600 && !engineOn)		// 1500 + 20%
+			engineOn = true;
 		//
 		// Speed (sample rate) output
 		engineSampleRate = map(currentPwm, minPwm, maxPwm, maxSampleInterval, minSampleInterval);
@@ -369,8 +386,15 @@ void loop()
 		// dacOffsetFade(); 	// Move to Task1
 	}
 	// Output update
-	modelOutput(rx_data->channel, leds->channel, rxReady, engineState == STARTING);
+	///modelOutput(rx_data->channel, leds->channel, rxReady, engineState == STARTING);
 	// outputUpdate();			// Output
+
+	// Dashboard control
+	#if defined STD_DASHBOARD or defined FREVIC_DASHBOARD
+	updateDashboard();
+	#elif defined NAVY_DASHBOARD
+	//dashboard.update(currentRpm, currentPwm, rxReady, engineState == STARTING);
+	#endif
 
 	// Debug chanels
 	if (cur_ms > lastloop_ms + 500)
@@ -567,15 +591,15 @@ void SerialDebug(uint32_t cur_ms, uint32_t _last_proccess)
 	switch (debugLine)
 	{
 	case 1:
-		Serial.printf("* Loop() : Tcy min %lu, max %lu us\n", minTcy, maxTcy);
+		Serial.printf("* Loop() : %lu ms, BGD %lu, Tcy min %lu, max %lu us\n", cur_ms, bgdCount, minTcy, maxTcy);
 		debugLine++;
 		break;
 	case 2:
-		Serial.printf("* loop %lu ms, BGD %lu, IT %lu, %lu, rd %lu, error %i\n", cur_ms, bgdCount, it_count, rx_data->GetItCount(), rx_data->GetRdCount(), rx_data->error);
+		Serial.printf("* RX Data : IT %lu, %lu, rd %lu, error %i, readyCount %u, %u, rxReady (T) %i\n", it_count, rx_data->GetItCount(), rx_data->GetRdCount(), rx_data->error, rx_data->GetReadyCount(), rx_data->ready, rxReady);
 		debugLine++;
 		break;
 	case 3:
-		Serial.printf("* Proccess : last %lu, cpt %lu cycle %u us\n", _last_proccess, cpProccess, rx_data->delta_us_proccess); //_delta_us);
+		Serial.printf("* Proccess : last %lu, cpt %lu cycle %lu us\n", _last_proccess, cpProccess, rx_data->delta_us_proccess); //_delta_us);
 		debugLine++;
 		break;
 	case 4:
@@ -1273,6 +1297,198 @@ void IRAM_ATTR fixedPlaybackTimer()
 }
 
 #pragma endregion SOUND_FUNCTIONS
+
+// =======================================================================================================
+// LCD DASHBOARD BY Gamadril: https://github.com/Gamadril/Rc_Engine_Sound_ESP32
+// =======================================================================================================
+
+bool engineStartAnimation()
+{
+	static bool dirUp = true;
+	static uint32_t lastFrameTime = millis();
+	static uint16_t rpm = 0;
+	static uint16_t speed = 0;
+	static int16_t fuel = 0;
+	static uint16_t adblue = 0;
+	static int16_t currentStep = 0; // 50 in total
+
+	if (millis() - lastFrameTime > 14)
+	{
+		dashboard.setSpeed(speed);
+		dashboard.setRPM(rpm);
+		dashboard.setFuelLevel(fuel);
+		dashboard.setAdBlueLevel(adblue);
+
+		speed += (dirUp ? 1 : -1) * (SPEED_MAX - SPEED_MIN) / 50;
+		rpm += (dirUp ? 1 : -1) * (RPM_MAX - RPM_MIN) / 50;
+		fuel += (dirUp ? 1 : -1) * (FUEL_MAX - FUEL_MIN) / 50;
+		adblue += (dirUp ? 1 : -1) * (ADBLUE_MAX - ADBLUE_MIN) / 50;
+		currentStep = currentStep + (dirUp ? 1 : -1);
+
+		lastFrameTime = millis();
+
+		if (dirUp && currentStep >= 50)
+		{
+			speed = SPEED_MAX;
+			rpm = RPM_MAX;
+			fuel = FUEL_MAX;
+			adblue = ADBLUE_MAX;
+			currentStep = 50;
+			dirUp = false;
+		}
+		else if (!dirUp && currentStep <= 0)
+		{ // Animation finished
+			speed = 0;
+			rpm = 0;
+			fuel = 0;
+			adblue = 0;
+			currentStep = 0;
+			dirUp = true;
+			return true;
+		}
+	}
+	return false;
+}
+
+// ----------------------------------------------------------------------
+void updateDashboard()
+{
+	static uint16_t lastFrameTime = millis();
+	static uint16_t rpm = 0;
+	static uint16_t fuel = 0;
+	static uint16_t adblue = 0;
+	static bool startAnimationFinished = false;
+
+	static uint16_t rpmNeedle = 0;
+	static uint16_t speedNeedle = 0;
+	static uint16_t fuelNeedle = 0;
+	static uint16_t adblueNeedle = 0;
+
+	// Start animation triggering
+	if ((engineState == STARTING || engineState == RUNNING) && !startAnimationFinished)
+	{
+		startAnimationFinished = engineStartAnimation();
+		return;
+	}
+	else if (engineState == STOPPED)	// OFF
+	{
+		startAnimationFinished = false;
+	}
+
+	// Calculations
+	// RPM, fuel, adblue
+	if (engineState == STARTING || engineState == RUNNING)
+	{
+		rpm = currentRpm * 450 / 500 + 50; // Idle rpm offset!
+
+#if defined BATTERY_PROTECTION
+		fuel = map_Generic<float, float, float, int16_t, int16_t>((batteryVoltage / numberOfCells), CUTOFF_VOLTAGE, FULLY_CHARGED_VOLTAGE, 0, 100);
+		if (fuel > 100)
+			fuel = 100;
+		if (fuel < 0)
+			fuel = 0;
+		if ((batteryVoltage / numberOfCells) < CUTOFF_VOLTAGE)
+			fuel = 0;
+#else
+		fuel = 90;
+#endif
+		adblue = 80;
+	}
+	else
+	{
+		rpm = currentRpm;
+		fuel = 0;
+		adblue = 0;
+	}
+
+	// Speed
+	uint16_t speed;
+
+#if defined VIRTUAL_3_SPEED or defined VIRTUAL_16_SPEED_SEQUENTIAL or defined STEAM_LOCOMOTIVE_MODE or defined BOAT_MODE
+	//speed = currentSpeed; // for all transmissions
+	speed = currentRpm;		// 
+#else
+	if (!automatic)
+		speed = currentSpeed * 100 / manualGearRatios[selectedGear - 1]; // Manual transmission
+	else
+		speed = currentSpeed; // Automatic transmission
+#endif
+
+	speed = map(speed, 0, RPM_MAX, 0, MAX_REAL_SPEED);
+
+	///if (!gearUpShiftingInProgress && !gearDownShiftingInProgress)
+	///{ // avoid jumps between gear switches
+		dashboard.setSpeed(speed);
+	///}
+
+	// Central display
+#if defined BATTERY_PROTECTION
+	dashboard.setVolt(batteryVoltage, CUTOFF_VOLTAGE * numberOfCells);
+#endif
+
+/*
+	if (neutralGear)
+	{
+		dashboard.setGear(0);
+	}
+	else if (escInReverse)
+	{
+		dashboard.setGear(-1);
+	}
+	else
+	{
+		if (!automatic)
+			dashboard.setGear(selectedGear); // Manual transmission
+		else
+			dashboard.setGear(selectedAutomaticGear); // Automatic transmission
+	}
+
+	// Indicator lamps
+#ifdef HAZARDS_WHILE_5TH_WHEEL_UNLOCKED
+	dashboard.setLeftIndicator(indicatorSoundOn && (indicatorLon || hazard || unlock5thWheel || batteryProtection));
+	dashboard.setRightIndicator(indicatorSoundOn && (indicatorRon || hazard || unlock5thWheel || batteryProtection));
+#else
+	dashboard.setLeftIndicator(indicatorSoundOn && (indicatorLon || hazard || batteryProtection));
+	dashboard.setRightIndicator(indicatorSoundOn && (indicatorRon || hazard || batteryProtection));
+#endif
+	dashboard.setLowBeamIndicator(lightsOn);
+	dashboard.setHighBeamIndicator(headLightsHighBeamOn || headLightsFlasherOn);
+	dashboard.setFogLightIndicator(fogLightOn);
+*/
+	// Needles
+	if (millis() - lastFrameTime > 14)
+	{
+
+		if (engineState == RUNNING)
+		{
+			rpmNeedle = rpm; // No delay, if running!
+		}
+		else
+		{
+			if (rpm > rpmNeedle)
+				rpmNeedle++;
+			if (rpm < rpmNeedle)
+				rpmNeedle--;
+		}
+
+		if (fuel > fuelNeedle)
+			fuelNeedle++;
+		if (fuel < fuelNeedle)
+			fuelNeedle--;
+
+		if (adblue > adblueNeedle)
+			adblueNeedle++;
+		if (adblue < adblueNeedle)
+			adblueNeedle--;
+
+		dashboard.setRPM(rpmNeedle);
+		dashboard.setFuelLevel(fuelNeedle);
+		dashboard.setAdBlueLevel(adblueNeedle);
+		lastFrameTime = millis();
+	}
+}
+
+
 
 // DIYGuy999 
 // =======================================================================================================

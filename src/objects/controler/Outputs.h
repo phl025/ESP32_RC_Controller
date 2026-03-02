@@ -17,7 +17,12 @@ class Outputs {
 // Data
 private:
 	int outputCount_ = OUTPUTS_MAX;
+	
+#if defined STD_DASHBOARD or defined FREVIC_DASHBOARD
+	const uint8_t pins_[OUTPUTS_MAX] = {0, 5, 17, 16, 4, 2, 15, 0, 22, 3, 0, 0};
+#else
 	const uint8_t pins_[OUTPUTS_MAX] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
+#endif
 	esp_err_t gpio_error_;		// GPIO error code
 
 public:
