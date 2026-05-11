@@ -18,37 +18,6 @@
 #define SOUND1_TRIG 	rx_data->channel[2].trigger.highEdge
 #define SOUND2_TRIG		false		//"rx_data->channel[6].trigger.high || rx_data->channel[6].trigger.low"
 
-// Leds / Output command
-// Ouputs, ULN2003 (IC2) : 23 (3x), 22, 3, 21, 19 
-// Ouputs, ULN2003 (IC3) : 18, 5, 17, 16, 4, 2, 15 
-//#define OUTPUTS		7
-//uint8_t OUTPUT_PINS[7] = {18, 5, 17, 16, 4, 2, 15};
-/*
-typedef enum {
-    SIDE_L = 18,
-    ROOF_L = 5,
-	REVERSING_L = 17,
-	FOG_L = 16,
-	INDICATOR_R = 4,
-	INDICATOR_L = 2,
-	TAIL_L = 15
-    SHAKER = 23,
-    CABIN_L = 22,
-    HEAD_L = 3,
-    BEACON_L1 = 21,
-	BEACON_L2 = 19,
-} OutputName_t;
-*/
-//#define OUTPUTS		12
-uint8_t OUTPUT_PINS[OUTPUTS_MAX] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
-// Hardware IC3 : 18:Sidelight, 5:Rooflight, 17:Reversing, 16:Foglight, 4:Indicator R, 2:Indicator_L, 15:TailLight
-// Hardware IC2 : 23:Shaker (3x), 22:Cabinlight, 3:Headlight, 21:Beaconlight, 19:Beaconlight2
-#define PIN_OUT1		18
-#define PIN_OUT2		5
-#define OUT1_CMD		rx_data->channel[4].trigger.latchLow
-#define OUT2_CMD		rx_data->channel[4].trigger.latchHigh
-//uint8_t cabLightsBrightness = 100; // Usually 255, 100 for Actros & Ural
-
 // Remote control : RadioMaster TX16S + ER4 (4xPWM) : 
 //#define RX_CHANNELS 4
 // Remote control : RadioMaster TX16S + ER6 (6xPWM) : All channels are 'ON' almost at the same time, not CH1 then CH2 then CH3 ....
@@ -186,16 +155,14 @@ uint8_t ESC1_DRAGBRAKE_DUTY = 10;
 #define ESC3_CH		0	// ESC3, Channel number (not used)
 
 // Model output
-//#define OUTPUTS		12
-//uint8_t OUTPUT_PINS[OUTPUTS] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
-// Hardware IC3 : [0] 18:Sidelight, [1] 5:Rooflight, [2] 17:Reversing, [3] 16:Foglight, [4] 4:Indicator R, [5] 2:Indicator_L, [6] 15:TailLight
-// Hardware IC2 : [7] 23:Shaker (3x), [8] 22:Cabinlight, [9] 3:Headlight, [10] 21:Beaconlight, [11] 19:Beaconlight2
-//
-// For outputModel()
-#include "src_ext/statusLED.h"
+// #define OUTPUTS		12
+// uint8_t OUTPUT_PINS[OUTPUTS] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
+// Hardware IC3 : [0] 18:Sidelight(*), [1] 5:Rooflight, [2] 17:Reversing, [3] 16:Foglight, [4] 4:Indicator_R, [5] 2:Indicator_L, [6] 15:TailLight
+// Hardware IC2 : [7] 23:Shaker(*) (3x), [8] 22:Cabinlight, [9] 3:Headlight, [10] 21:Beaconlight1(*), [11] 19:Beaconlight2(*)
+// (*) : Not usable for outputs if DASHBOARD is configured (pins 18, 19, 21, 23 are used for dashboard command)
 
 // Outputs : Defined for the model
-inline void modelOutput(RxChannel *rx_channel, statusLED *leds)
+inline void modelOutput(RxChannel *rx_channel, OutputLED *leds, bool rxReady, bool engineStarting)
 {
 	// Indicator R [4], pin 'D4'
 	if (rx_channel[STEERING].trigger.low)

@@ -18,18 +18,6 @@
 #define SOUND1_TRIG 	rx_data->channel[2].trigger.highEdge
 #define SOUND2_TRIG		false		//"rx_data->channel[6].trigger.high || rx_data->channel[6].trigger.low"
 
-// Leds / Output command
-// Ouputs, ULN2003 (IC2) : 23 (3x), 22, 3, 21, 19 
-// Ouputs, ULN2003 (IC3) : 18, 5, 17, 16, 4, 2, 15 
-//#define OUTPUTS		12
-uint8_t OUTPUT_PINS[OUTPUTS_MAX] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
-// Hardware IC3 : 18:Sidelight, 5:Rooflight, 17:Reversing, 16:Foglight, 4:Indicator R, 2:Indicator_L, 15:TailLight
-// Hardware IC2 : 23:Shaker (3x), 22:Cabinlight, 3:Headlight, 21:Beaconlight, 19:Beaconlight2
-#define PIN_OUT1		18
-#define PIN_OUT2		5
-#define OUT1_CMD		rx_data->channel[4].trigger.latchLow
-#define OUT2_CMD		rx_data->channel[4].trigger.latchHigh
-
 // PPM communication (RX header, 8 channels, working fine, but channel signals are a bit jittery)
 #define PPM_COMMUNICATION           // control signals are coming in via the PPM interface (comment it out for classic PWM RC signals)
 #ifdef PPM_COMMUNICATION
@@ -149,6 +137,7 @@ uint8_t ESC1_DRAGBRAKE_DUTY = 10;
 // ESC 3
 #define ESC3_CH		0	// ESC3, Channel number (not used)
 
+// Leds / Output command
 // Model output
 //#define OUTPUTS		12
 //uint8_t OUTPUT_PINS[OUTPUTS] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
@@ -156,10 +145,10 @@ uint8_t ESC1_DRAGBRAKE_DUTY = 10;
 // Hardware IC2 : [7] 23:Shaker (3x), [8] 22:Cabinlight, [9] 3:Headlight, [10] 21:Beaconlight, [11] 19:Beaconlight2
 //
 // For outputModel()
-#include "src_ext/statusLED.h"
+//#include "src_ext/statusLED.h"
 
 // Outputs : Defined for the model
-inline void modelOutput(RxChannel *rx_channel, statusLED *leds)
+inline void modelOutput(RxChannel *rx_channel, OutputLED *leds, bool rxReady, bool engineStarting)
 {
 	// Indicator R [4], pin 'D4'
 	if (rx_channel[STEERING].trigger.low)

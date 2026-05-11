@@ -87,16 +87,6 @@ uint8_t PWM_PINS[RX_CHANNELS] = {13, 12, 14, 27, 35, 34};	// Input pin numbers (
 #endif
 #define SOUND2_TRIG		rx_data->channel[6].trigger.high || rx_data->channel[6].trigger.low
 
-// Leds / Output command -> See below 'modelOutput'
-// Ouputs, ULN2003 (IC2) : 23 (3x), 22, 3, 21, 19 
-// Ouputs, ULN2003 (IC3) : 18, 5, 17, 16, 4, 2, 15 
-//#define PIN_OUT1		18
-//#define PIN_OUT2		5
-//#define OUT1_CMD		rx_data->channel[7].trigger.latchLow
-//#define OUT2_CMD		rx_data->channel[7].trigger.latchHigh
-
-
-
 // Channels reversed or not
 bool channelReversed[17] = {
 	false,	// CH0 (unused) -> used for failsafe (PPM)
@@ -219,56 +209,60 @@ uint8_t ESC3_DRAGBRAKE_DUTY = 10;
 // Model output
 // #define OUTPUTS		12
 // uint8_t OUTPUT_PINS[OUTPUTS] = {18, 5, 17, 16, 4, 2, 15, 23, 22, 3, 21, 19};
-// Hardware IC3 : [0] 18:Sidelight, [1] 5:Rooflight, [2] 17:Reversing, [3] 16:Foglight, [4] 4:Indicator_R, [5] 2:Indicator_L, [6] 15:TailLight
-// Hardware IC2 : [7] 23:Shaker (3x), [8] 22:Cabinlight, [9] 3:Headlight, [10] 21:Beaconlight1, [11] 19:Beaconlight2
+// Hardware IC3 : [0] 18:Sidelight(*), [1] 5:Rooflight, [2] 17:Reversing, [3] 16:Foglight, [4] 4:Indicator_R, [5] 2:Indicator_L, [6] 15:TailLight
+// Hardware IC2 : [7] 23:Shaker(*) (3x), [8] 22:Cabinlight, [9] 3:Headlight, [10] 21:Beaconlight1(*), [11] 19:Beaconlight2(*)
+// (*) : Not usable for outputs if DASHBOARD is configured (pins 18, 19, 21, 23 are used for dashboard command)
 
 // Outputs : Defined for the model
 inline void modelOutput(RxChannel *rx_channel, OutputLED *leds, bool rxReady, bool engineStarting)
 {
 	uint8_t crankingDim = 0;
 	// Brigthness adjustment
-	uint8_t brightness = map(rx_channel[13].rx, 988, 2012, 0, 255);
+	uint8_t brightness = map(rx_channel[13].rx, 988, 2012, 5, 255);
+	uint8_t brightnessCab = map(rx_channel[14].rx, 988, 2012, 5, 255);
 
 	// Engine starting dimming 
 	if (engineStarting) crankingDim = 1;	// 1 = 50%, 2 = 25%
 
-	// Indicator R [4] pin 'D4'
-	if (rx_channel[STEERING].trigger.low)
+	// Examples
+	//leds[4].off(0, 400);			// OFF, 400 us -> ~100ms
+	//leds[4].on(0, 400);			// ON, 400 us -> ~100ms
+	//leds[4].pwm(pwm, 0, 400);		// PWM value, 400 us -> ~100ms
+	//leds[4].flash(250, 250, 0, 0, 0, 255, 0, 0, 390);	// 390 us -> ~100ms
+	
+	// Green Light : Indicator R [4] pin 'D4'
+	if (!rxReady)
+		leds[4].flash(100, 100, 0, 0, 0, 255, 0, 0, 0);		// Fast flash, no RX signal
+	else if (rx_channel[STEERING].trigger.low)
 		leds[4].flash(250, 250, 0, 0, 0, 255, 0, 0, 390);	// 390 us -> ~100ms
 	else
-		leds[4].pwm(0, 0, 400);		// 400 us -> ~100ms
-		//leds[4].off(0, 400);		// 400 us -> ~100ms
+		leds[4].pwm(0, 0, 400);		// OFF, 400 us -> ~100ms
 
-	// Indicator L [5] pin 'D2'
-	if (rx_channel[STEERING].trigger.high)
-		leds[5].flash(250, 250, 0, 0, 0, 255, 0, 0, 390);
+	// Red light : Indicator L [5] pin 'D2'
+	if (!rxReady)
+		leds[5].flash(100, 100, 0, 0, 0, 255, 0, 0, 0);		// Fast flash, no RX signal
+	else if (rx_channel[STEERING].trigger.high)
+		leds[5].flash(250, 250, 0, 0, 0, 255, 0, 0, 390);	// 390 us -> ~100ms
 	else
-		leds[5].pwm(0, 0, 400);		// 400 us -> ~100ms
-		//leds[5].off(0, 400);
+		leds[5].pwm(0, 0, 400);		// OFF, 400 us -> ~100ms
 		
-	// Fogligth [3] pin 'D16' : Fishing light
+	// Fishing light : Headlight [9] pin 'D5'
 	if(rx_channel[MIX3P].getSwitchLatch(6) && rxReady)
-	//if (rx_channel[8].trigger.latchLow && rxReady)
-		leds[3].pwm(255 - crankingDim, 0, 0);
-		//leds[3].pwm(brightness >> crankingDim, 0, 0);		// No ramp
+		leds[9].pwm((brightness >> crankingDim), 0, 400);	// 400us -> ~100ms, 0 :No ramp
 	else
-		leds[3].pwm(0, 0, 400);		// = leds[3].off(0, 400);
+		leds[9].pwm(0, 0, 400);		// OFF, 400 us -> ~100ms
 
-	// Roofligth [1] pin 'D5' : Fishing light (cabine)
+	// Fishing light (cabine) : Fogligth [3] pin 'D16'
 	if(rx_channel[MIX3P].getSwitchLatch(7) && rxReady)
-	//if (rx_channel[8].trigger.latchHigh && rxReady)
-		//leds[1].pwm(255 - crankingDim, 0, 0);
-		leds[1].pwm((brightness >> crankingDim), 0, 0);	// No ramp
+		leds[3].pwm(brightness >> crankingDim, 0, 400);		// 400us -> ~100ms, 0 :No ramp
 	else
-		leds[1].pwm(0, 0, 400);		// 400 us -> ~100ms
+		leds[3].pwm(0, 0, 400);		// OFF, 400 us -> ~100ms
 
-	// Cabineligth [8] pin'D22'
+	// Cabineligth : [1] 5:Rooflight
 	if (rxReady)
-		//leds[8].pwm(255 - crankingDim);
-		leds[8].pwm(255 >> crankingDim);			// No ramp
+		leds[1].pwm(brightnessCab >> crankingDim);			// No ramp
 	else
-		//leds[8].off(0, 1000);		// 1000 -> 1000*256us = 256ms
-		leds[8].pwm(0, 0, 400);		// 400 us -> ~100ms
+		leds[1].pwm(0, 0, 400);		// OFF, 400 us -> ~100ms
 		
 }
 

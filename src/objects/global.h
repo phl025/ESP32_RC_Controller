@@ -33,11 +33,14 @@
 #define OUTPUTS_MAX		12
 
 // Dashboard
+#define USE_DASHBOARD
+#ifdef USE_DASHBOARD
 // TFT 0.96 inch, 80x160, 16 bit color, driver ST7735 : Config dans platformio.ini
 //#define STD_DASHBOARD
-#define FREVIC_DASHBOARD
+//#define FREVIC_DASHBOARD
 // TFT 1.3 inch, 240x240, 16 bit color, driver ST7789 : Config dans platformio.ini
-//#define NAVY_DASHBOARD
+#define NAVY_DASHBOARD
+#endif
 
 // EEPROM 
 //#define EEPROM_SIZE     256 	// 256 Bytes (512 is maximum)

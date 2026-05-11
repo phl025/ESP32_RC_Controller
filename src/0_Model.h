@@ -11,9 +11,10 @@
 // Boulogne Etaple : Test PPM
 //#include "models/test_ppm.h"
 
-// Dashboard
+// Dashboard -> see global.h for dashboard configuration
 //#define STD_DASHBOARD
 //#define FREVIC_DASHBOARD
+//#define NAVY_DASHBOARD
 
 //
 // EOF

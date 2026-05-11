@@ -279,7 +279,7 @@ void setup()
 #if defined STD_DASHBOARD or defined FREVIC_DASHBOARD or defined NAVY_DASHBOARD
 	// Dashboard setup
 	Serial.printf("* Setup DASHBOARD :\n");
-	Serial.printf("* - Pins 18 (sidelights), 19 (beacon2), 21 (beacon1), 23 (shaker) not usable for Outputs !\n");
+	Serial.printf("* - Pins 18 (sidelights), 19 (beacon2), 21 (beacon1), 23 (shaker) are not usable for Outputs !\n");
 	//Serial.printf("-------------------------------------\n");
 	dashboard.init(TFT_ROTATION);	//(dashRotation);
 	//dashboard.init(3);	//(dashRotation);
@@ -330,7 +330,6 @@ void loop()
 		// Data process
 		rx_data->processRawChannels(cur_us);
 		cpProccess++;
-		//
 		// Multi switch mixer (Need CRSF / SBUS protocol) - Not tested with PWM/PPM protocol(2026-01)
 #ifdef MIX3P
 		// Use 'Mix3P.lua', Tested with TX16S / RH3-P (CRSF)
@@ -386,13 +385,14 @@ void loop()
 		// dacOffsetFade(); 	// Move to Task1
 	}
 	// Output update
-	///modelOutput(rx_data->channel, leds->channel, rxReady, engineState == STARTING);
+	modelOutput(rx_data->channel, leds->channel, rxReady, engineState == STARTING);
 	// outputUpdate();			// Output
 
 	// Dashboard control
 	#if defined STD_DASHBOARD or defined FREVIC_DASHBOARD
 	updateDashboard();
 	#elif defined NAVY_DASHBOARD
+	dashboard.update(cur_ms);
 	//dashboard.update(currentRpm, currentPwm, rxReady, engineState == STARTING);
 	#endif
 
@@ -1304,6 +1304,8 @@ void IRAM_ATTR fixedPlaybackTimer()
 
 bool engineStartAnimation()
 {
+#if defined STD_DASHBOARD or defined FREVIC_DASHBOARD
+
 	static bool dirUp = true;
 	static uint32_t lastFrameTime = millis();
 	static uint16_t rpm = 0;
@@ -1347,12 +1349,14 @@ bool engineStartAnimation()
 			return true;
 		}
 	}
+#endif
 	return false;
 }
 
 // ----------------------------------------------------------------------
 void updateDashboard()
 {
+#if defined STD_DASHBOARD or defined FREVIC_DASHBOARD
 	static uint16_t lastFrameTime = millis();
 	static uint16_t rpm = 0;
 	static uint16_t fuel = 0;
@@ -1486,6 +1490,7 @@ void updateDashboard()
 		dashboard.setAdBlueLevel(adblueNeedle);
 		lastFrameTime = millis();
 	}
+#endif
 }
 
 
